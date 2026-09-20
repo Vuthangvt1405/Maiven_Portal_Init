@@ -13,8 +13,6 @@ namespace Maiven_Portal_Managment.Repository;
 
 public sealed class AuthRepository(AppDbContext dbContext) : IAuthRepository
 {
-    private const string StudentRoleCode = "STUDENT";
-
     public Task<bool> EmailExistsAsync(
         string normalizedEmail,
         CancellationToken cancellationToken) =>
@@ -61,10 +59,10 @@ public sealed class AuthRepository(AppDbContext dbContext) : IAuthRepository
     {
         var studentRole = await dbContext.Roles
             .SingleOrDefaultAsync(
-                role => role.Code == StudentRoleCode && role.Status == ActiveStatus.ACTIVE,
+                role => role.Code == SystemRoles.Student.Code && role.Status == ActiveStatus.ACTIVE,
                 cancellationToken)
             ?? throw new InvalidOperationException(
-                "The required active STUDENT role is not configured.");
+                $"The required active {SystemRoles.Student.Code} role is not configured.");
 
         var entity = user.ToNewEntity(passwordHash);
         entity.UserRoles.Add(new UserRole

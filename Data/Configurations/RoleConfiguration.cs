@@ -1,5 +1,6 @@
 using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Data.Entities.Enums;
+using Maiven_Portal_Managment.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -24,16 +25,39 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.HasIndex(x => new { x.IsDeleted, x.Status }).HasDatabaseName("IX_ROLES_isDelete_status");
 
         var seedTimestamp = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        builder.HasData(new Role
-        {
-            Id = -1,
-            Code = "STUDENT",
-            Name = "Student",
-            Description = "Student self-registration role.",
-            Status = ActiveStatus.ACTIVE,
-            IsDeleted = false,
-            CreatedAt = seedTimestamp,
-            UpdatedAt = seedTimestamp
-        });
+        builder.HasData(
+            new Role
+            {
+                Id = SystemRoles.Student.Id,
+                Code = SystemRoles.Student.Code,
+                Name = SystemRoles.Student.Name,
+                Description = SystemRoles.Student.Description,
+                Status = ActiveStatus.ACTIVE,
+                IsDeleted = false,
+                CreatedAt = seedTimestamp,
+                UpdatedAt = seedTimestamp
+            },
+            new Role
+            {
+                Id = SystemRoles.Teacher.Id,
+                Code = SystemRoles.Teacher.Code,
+                Name = SystemRoles.Teacher.Name,
+                Description = SystemRoles.Teacher.Description,
+                Status = ActiveStatus.ACTIVE,
+                IsDeleted = false,
+                CreatedAt = seedTimestamp,
+                UpdatedAt = seedTimestamp
+            },
+            new Role
+            {
+                Id = SystemRoles.Admin.Id,
+                Code = SystemRoles.Admin.Code,
+                Name = SystemRoles.Admin.Name,
+                Description = SystemRoles.Admin.Description,
+                Status = ActiveStatus.ACTIVE,
+                IsDeleted = false,
+                CreatedAt = seedTimestamp,
+                UpdatedAt = seedTimestamp
+            });
     }
 }

@@ -647,12 +647,34 @@ namespace Maiven_Portal_Managment.Migrations
                     b.HasData(
                         new
                         {
-                            Id = -1L,
+                            Id = 1L,
                             Code = "STUDENT",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Student self-registration role.",
                             IsDeleted = false,
                             Name = "Student",
+                            Status = "ACTIVE",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 2L,
+                            Code = "TEACHER",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Teacher role.",
+                            IsDeleted = false,
+                            Name = "Teacher",
+                            Status = "ACTIVE",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 3L,
+                            Code = "ADMIN",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "System administrator role.",
+                            IsDeleted = false,
+                            Name = "Admin",
                             Status = "ACTIVE",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
