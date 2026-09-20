@@ -1,0 +1,35 @@
+### Summary quyết định kiến trúc Database
+
+1. **Role/User được thiết kế theo hướng flexible, không hard-code theo loại người dùng.** Schema ban đầu có `USER_PROFILES`, `STUDENT_PROFILES`, `TEACHER_PROFILES`, `ADMIN_PROFILES`, khiến mỗi khi xuất hiện role mới có thể phải tạo thêm bảng mới.  Quyết định mới là dùng `USERS`, `ROLES`, `USER_ROLES`; một user có thể có nhiều role và role mới có thể thêm bằng dữ liệu thay vì thay đổi schema. `USER_ROLES.profile_data` đã bị loại bỏ để bảng mapping chỉ tập trung vào quan hệ user-role.
+
+2. **`USERS` chỉ giữ thông tin tài khoản/cá nhân cần thiết, không giữ trạng thái nghiệp vụ không cần thiết.** Đã bỏ `status` và `last_login_at`. Schema ban đầu có hai field này trong `USERS`. 
+
+3. **`USER_ROLES` được đơn giản hóa.** Đã bỏ `profile_data`, `assigned_by`, `assigned_at`. `USER_ROLES` về bản chất là bảng mapping giữa user và role, không nên chứa quá nhiều metadata nếu hệ thống không thực sự cần.
+
+4. **`revoked_at` hiện là điểm cần chốt cuối cùng.** Ý nghĩa của nó là thời điểm một role bị thu hồi khỏi user. Tuy nhiên, vì kiến trúc hiện tại yêu cầu mọi bảng đều có `isDelete`, nên nếu không cần lưu chính xác thời điểm thu hồi role thì `revoked_at` có thể bỏ và dùng `isDelete` để xác định role còn hiệu lực hay không. Nếu cần lịch sử chi tiết thời điểm revoke thì giữ `revoked_at`. Đây mới là khuyến nghị, chưa phải quyết định cuối cùng của bạn.
+
+5. **Tất cả bảng đều sử dụng Soft Delete.** Mọi bảng phải có `isDelete`, thay vì xóa vật lý record. Quy ước nghiệp vụ là `isDelete = false` nghĩa là record đang tồn tại/hoạt động và `isDelete = true` nghĩa là record đã bị xóa mềm. Bản ERD gần nhất đã áp dụng nguyên tắc này cho toàn bộ các bảng còn lại.
+
+6. **Audit phải ở mức toàn hệ thống, không chỉ audit thao tác trực tiếp của user.** `AUDIT_LOGS` ban đầu chỉ có `user_id`, `action`, `entity_type`, `entity_id`, old/new value và thời gian.  Quyết định kiến trúc là audit phải có khả năng ghi nhận event từ `USER`, `SERVICE`, `SYSTEM` và các luồng không có user trực tiếp. Vì vậy audit cần đủ context như service/event/request/trace/entity/change/outcome để theo dõi được toàn bộ sự kiện giữa các dịch vụ.
+
+7. **Bỏ Course Prerequisites.** Không quản lý quan hệ môn tiên quyết trong DB hiện tại. Bảng `COURSE_PREREQUISITES` và các relationship tương ứng được xóa. Schema ban đầu có bảng này liên kết course với prerequisite course. 
+
+8. **Bỏ hoàn toàn Room.** Không quản lý phòng học trong scope DB này. Bảng `ROOMS`, `room_id` và relationship Room–Schedule đều bị loại bỏ. Trong schema ban đầu, `ROOMS` được dùng để xác định nơi tổ chức `SCHEDULES`. 
+
+9. **Bỏ bảng `SCHEDULES`, đưa lịch học trực tiếp vào `COURSE_SECTIONS`.** Các field `day_of_week`, `start_time`, `end_time`, `start_date`, `end_date` được chuyển lên `COURSE_SECTIONS`. Mục tiêu là giảm một entity trung gian khi mỗi section chỉ cần lưu trực tiếp thông tin lịch học. Bảng `SCHEDULES` cũ cùng các relationship liên quan bị xóa.
+
+10. **`REGISTRATION_PERIODS` chỉ quản lý khoảng thời gian đăng ký.** Đã bỏ `min_credits` và `max_credits`. Giới hạn số tín chỉ không còn thuộc responsibility của bảng registration period.
+
+11. **`ENROLLMENTS` được đơn giản hóa.** Đã bỏ `registered_at` và `dropped_at`. Schema ban đầu dùng hai field này để lưu thời điểm đăng ký/hủy lớp.  Nếu cần truy vết thay đổi trạng thái enrollment về sau thì có thể dựa vào audit thay vì lưu thêm timestamp nghiệp vụ trực tiếp trong bảng.
+
+12. **Announcement được đơn giản hóa và hỗ trợ thông báo toàn cục.** `ANNOUNCEMENTS.section_id` được phép `NULL`: có `section_id` thì là thông báo liên quan tới một course section, còn `NULL` có thể dùng cho thông báo không gắn với lớp cụ thể. Đã bỏ `announcement_type`, `audience`, `expires_at`. Schema ban đầu chứa cả ba field này. 
+
+13. **Bỏ `ANNOUNCEMENT_READS`.** Hệ thống hiện không cần tracking từng user đã đọc announcement hay chưa. Bảng mapping `ANNOUNCEMENT_READS` và các relationship liên quan đều bị loại bỏ. Bảng này ban đầu lưu `announcement_id`, `user_id`, `read_at`. 
+
+14. **Grade component không tự định nghĩa điểm tối đa.** Đã bỏ `GRADE_COMPONENTS.max_score`; giữ cấu trúc component và `weight` để phục vụ tính điểm. Schema ban đầu có cả `weight` và `max_score`. 
+
+15. **Course Result không cần thời điểm publish riêng.** Đã bỏ `COURSE_RESULTS.published_at`; thông tin lifecycle chung có thể dựa vào timestamp của record/audit thay vì thêm một field publish riêng. Schema ban đầu có `published_at` trong `COURSE_RESULTS`. 
+
+Tóm lại, hướng kiến trúc hiện tại là: **DB đơn giản hơn, role linh hoạt hơn, giảm các bảng/profile hard-code, giảm metadata không thật sự cần thiết, dùng soft delete thống nhất và đẩy trách nhiệm truy vết lịch sử về hệ thống audit tập trung.**
+
+Điểm duy nhất mình xem là **chưa chốt hoàn toàn** hiện tại là `USER_ROLES.revoked_at`: nếu `AUDIT_LOGS` đã đủ mạnh và chỉ cần biết role active/inactive thì có thể bỏ để tránh overlap với `isDelete`; nếu nghiệp vụ cần query trực tiếp “role bị revoke lúc nào” thì nên giữ.

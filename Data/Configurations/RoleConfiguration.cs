@@ -1,0 +1,39 @@
+using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Data.Entities.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace Maiven_Portal_Managment.Data.Configurations;
+
+public class RoleConfiguration : IEntityTypeConfiguration<Role>
+{
+    public void Configure(EntityTypeBuilder<Role> builder)
+    {
+        builder.ToTable("ROLES", table =>
+            table.HasCheckConstraint("CK_ROLES_status", "[status] IN ('ACTIVE', 'INACTIVE')"));
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id").HasColumnType("bigint").ValueGeneratedOnAdd();
+        builder.Property(x => x.Code).HasColumnName("code").HasColumnType("varchar(50)").HasMaxLength(50).IsRequired();
+        builder.Property(x => x.Name).HasColumnName("name").HasColumnType("varchar(200)").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Description).HasColumnName("description").HasColumnType("nvarchar(max)");
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasColumnType("varchar(10)").HasMaxLength(10).IsRequired();
+        builder.Property(x => x.IsDeleted).HasColumnName("isDelete").HasDefaultValue(false).IsRequired();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
+        builder.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UX_ROLES_code");
+        builder.HasIndex(x => new { x.IsDeleted, x.Status }).HasDatabaseName("IX_ROLES_isDelete_status");
+
+        var seedTimestamp = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        builder.HasData(new Role
+        {
+            Id = -1,
+            Code = "STUDENT",
+            Name = "Student",
+            Description = "Student self-registration role.",
+            Status = ActiveStatus.ACTIVE,
+            IsDeleted = false,
+            CreatedAt = seedTimestamp,
+            UpdatedAt = seedTimestamp
+        });
+    }
+}

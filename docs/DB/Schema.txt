@@ -1,0 +1,242 @@
+erDiagram
+
+    USERS {
+        bigint id PK
+        varchar email UK
+        varchar password_hash
+        varchar full_name
+        date date_of_birth
+        enum gender "MALE | FEMALE | OTHER"
+        varchar phone
+        varchar address
+        varchar avatar_url
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    ROLES {
+        bigint id PK
+        varchar code UK
+        varchar name
+        text description
+        enum status "ACTIVE | INACTIVE"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    USER_ROLES {
+        bigint id PK
+        bigint user_id FK
+        bigint role_id FK
+        enum status "ACTIVE | INACTIVE"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    %% Flexible role model: add new roles through ROLES data instead of
+    %% creating separate profile tables for student / teacher / admin.
+    %% Recommended constraint: UNIQUE(user_id, role_id).
+
+    ACADEMIC_YEARS {
+        bigint id PK
+        varchar name
+        date start_date
+        date end_date
+        enum status "PLANNED | ACTIVE | COMPLETED"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    SEMESTERS {
+        bigint id PK
+        bigint academic_year_id FK
+        varchar name
+        date start_date
+        date end_date
+        enum status "PLANNED | ACTIVE | COMPLETED"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    COURSES {
+        bigint id PK
+        varchar course_code UK
+        varchar course_name
+        int credits
+        text description
+        enum status "ACTIVE | INACTIVE"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    COURSE_SECTIONS {
+        bigint id PK
+        bigint course_id FK
+        bigint semester_id FK
+        bigint teacher_user_role_id FK
+        varchar section_code
+        int capacity
+        enum day_of_week "MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY | SUNDAY"
+        time start_time
+        time end_time
+        date start_date
+        date end_date
+        enum status "PLANNED | OPEN | CLOSED | COMPLETED | CANCELLED"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    REGISTRATION_PERIODS {
+        bigint id PK
+        bigint semester_id FK
+        datetime start_at
+        datetime end_at
+        enum status "UPCOMING | OPEN | CLOSED"
+        bigint created_by FK
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    ENROLLMENTS {
+        bigint id PK
+        bigint student_user_role_id FK
+        bigint section_id FK
+        enum status "ENROLLED | DROPPED | COMPLETED"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    ANNOUNCEMENTS {
+        bigint id PK
+        bigint created_by FK
+        bigint section_id FK "nullable"
+        varchar title
+        text content
+        enum status "DRAFT | PUBLISHED | ARCHIVED"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    %% section_id is nullable so an announcement can be global or
+    %% associated with a specific course section.
+
+    GRADE_COMPONENTS {
+        bigint id PK
+        bigint section_id FK
+        varchar name
+        decimal weight
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    STUDENT_SCORES {
+        bigint id PK
+        bigint enrollment_id FK
+        bigint component_id FK
+        decimal score
+        bigint updated_by FK
+        boolean isDelete
+        datetime updated_at
+    }
+
+    COURSE_RESULTS {
+        bigint id PK
+        bigint enrollment_id FK,UK
+        decimal final_score
+        varchar letter_grade
+        decimal grade_point
+        enum result_status "PASS | FAIL | INCOMPLETE"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
+    %% AUDIT_LOGS supports user, anonymous, system and service events.
+    %% actor_user_id may be null for SYSTEM / SERVICE / ANONYMOUS events.
+    %% request_id / trace_id can correlate events across services.
+
+
+
+    %% =============================
+    %% ENUM CONVENTIONS
+    %% =============================
+    %% ROLES.status: ACTIVE | INACTIVE
+    %% USER_ROLES.status: ACTIVE | INACTIVE
+    %% ACADEMIC_YEARS.status: PLANNED | ACTIVE | COMPLETED
+    %% SEMESTERS.status: PLANNED | ACTIVE | COMPLETED
+    %% COURSES.status: ACTIVE | INACTIVE
+    %% COURSE_SECTIONS.status: PLANNED | OPEN | CLOSED | COMPLETED | CANCELLED
+    %% REGISTRATION_PERIODS.status: UPCOMING | OPEN | CLOSED
+    %% ENROLLMENTS.status: ENROLLED | DROPPED | COMPLETED
+    %% ANNOUNCEMENTS.status: DRAFT | PUBLISHED | ARCHIVED
+    %% COURSE_RESULTS.result_status: PASS | FAIL | INCOMPLETE
+    %% letter_grade remains varchar so the grading scale can change without schema migration.
+
+
+    %% =============================
+    %% USER / ROLE RELATIONSHIPS
+    %% =============================
+
+    USERS ||--o{ USER_ROLES : has_roles
+    ROLES ||--o{ USER_ROLES : defines
+
+    USERS ||--o{ ANNOUNCEMENTS : creates
+    USERS ||--o{ REGISTRATION_PERIODS : creates
+    USERS ||--o{ STUDENT_SCORES : updates
+
+
+    %% =============================
+    %% ACADEMIC STRUCTURE
+    %% =============================
+
+    ACADEMIC_YEARS ||--o{ SEMESTERS : contains
+
+    SEMESTERS ||--o{ COURSE_SECTIONS : contains
+    SEMESTERS ||--o{ REGISTRATION_PERIODS : has
+
+
+    %% =============================
+    %% COURSE / CLASS
+    %% =============================
+
+    COURSES ||--o{ COURSE_SECTIONS : has
+
+    USER_ROLES ||--o{ COURSE_SECTIONS : teaches
+
+    COURSE_SECTIONS ||--o{ ENROLLMENTS : contains
+    COURSE_SECTIONS ||--o{ GRADE_COMPONENTS : grading
+    COURSE_SECTIONS o|--o{ ANNOUNCEMENTS : class_announcements
+
+    %% teacher_user_role_id should reference a USER_ROLES record whose
+    %% role code represents a teacher role.
+
+
+    %% =============================
+    %% REGISTRATION
+    %% =============================
+
+    USER_ROLES ||--o{ ENROLLMENTS : registers
+
+    ENROLLMENTS ||--o{ STUDENT_SCORES : receives
+    ENROLLMENTS ||--o| COURSE_RESULTS : result
+
+    %% student_user_role_id should reference a USER_ROLES record whose
+    %% role code represents a student role.
+
+
+    %% =============================
+    %% SCORE
+    %% =============================
+
+    GRADE_COMPONENTS ||--o{ STUDENT_SCORES : contains

@@ -1,0 +1,16 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime log files
+Logs/*.log
+Logs/*.log.*
+
+.fake
