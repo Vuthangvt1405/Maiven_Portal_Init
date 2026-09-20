@@ -6,6 +6,7 @@
 |---|---|---|---|
 | `POST` | `/api/auth/register` | Anonymous | Create a student account and return a JWT |
 | `POST` | `/api/auth/login` | Anonymous | Authenticate any account with at least one active role and return a JWT |
+| `POST` | `/api/auth/admin/login` | Anonymous | Authenticate an account with an active `ADMIN` role and return a JWT |
 
 ## Student registration
 
@@ -38,6 +39,27 @@ HTTP request
 ```
 
 Unknown email, wrong password, deleted user, and accounts without an active role all return the same `401` response.
+
+## Admin bootstrap and login
+
+Applying the complete EF Core migration set automatically ensures the following default administrator exists:
+
+- Email: `admin@example.com`
+- Temporary password: `123456`
+- Display name: `System Administrator`
+
+The migration stores an ASP.NET Core Identity password hash rather than the plaintext password. If the email already exists, its profile and password are preserved and the active `ADMIN` role is ensured. Change the temporary password before using the account outside development.
+
+```text
+HTTP POST /api/auth/admin/login
+  -> request DTO validation
+  -> AuthService verifies the email and password
+  -> AuthService requires an active ADMIN role
+  -> JwtTokenService creates an access token containing the ADMIN role
+  -> HTTP 200 AuthResponse
+```
+
+A non-admin account receives the same generic `401` response as invalid credentials. The regular `/api/auth/login` endpoint continues to accept admins. There is no admin registration endpoint; `/api/auth/register` always creates a student account.
 
 ## JWT usage
 

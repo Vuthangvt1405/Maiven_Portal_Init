@@ -3,14 +3,13 @@ using System.Security.Claims;
 using System.Text;
 using Maiven_Portal_Managment.Configuration;
 using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Services.Interfaces;
 using Maiven_Portal_Managment.Services.Security;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Maiven_Portal_Managment.Services;
 
-public sealed class JwtTokenService(IOptions<JwtOptions> options) : ITokenService
+public sealed class JwtTokenService(IOptions<JwtOptions> options)
 {
     private readonly JwtOptions _options = options.Value;
 

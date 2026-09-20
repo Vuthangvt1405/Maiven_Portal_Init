@@ -1,5 +1,6 @@
 @Maiven_Portal_Managment_HostAddress = http://localhost:5119
 @accessToken = REPLACE_WITH_LOGIN_OR_REGISTER_TOKEN
+@academicYearId = 1
 
 ### Register a student account
 POST {{Maiven_Portal_Managment_HostAddress}}/api/auth/register
@@ -25,7 +26,50 @@ Content-Type: application/json
   "password": "student-password"
 }
 
-### Example protected request
-GET {{Maiven_Portal_Managment_HostAddress}}/api/example-protected
+### Login as the migration-seeded administrator
+POST {{Maiven_Portal_Managment_HostAddress}}/api/auth/admin/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "123456"
+}
+
+### Get the current student
+GET {{Maiven_Portal_Managment_HostAddress}}/api/students/me
 Authorization: Bearer {{accessToken}}
 Accept: application/json
+
+### Get the current administrator
+GET {{Maiven_Portal_Managment_HostAddress}}/api/admin/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Create an academic year (ADMIN only)
+POST {{Maiven_Portal_Managment_HostAddress}}/api/admin/academic-years
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "2026-2027",
+  "startDate": "2026-09-01",
+  "endDate": "2027-06-30",
+  "status": "ACTIVE"
+}
+
+### List academic years (ADMIN only)
+GET {{Maiven_Portal_Managment_HostAddress}}/api/admin/academic-years
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Fully update an academic year (ADMIN only)
+PUT {{Maiven_Portal_Managment_HostAddress}}/api/admin/academic-years/{{academicYearId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "2026-2027",
+  "startDate": "2026-08-24",
+  "endDate": "2027-07-02",
+  "status": "COMPLETED"
+}

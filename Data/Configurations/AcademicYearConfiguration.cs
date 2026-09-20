@@ -10,12 +10,12 @@ public class AcademicYearConfiguration : IEntityTypeConfiguration<AcademicYear>
     {
         builder.ToTable("ACADEMIC_YEARS", table =>
         {
-            table.HasCheckConstraint("CK_ACADEMIC_YEARS_status", "[status] IN ('PLANNED', 'ACTIVE', 'COMPLETED')");
+            table.HasCheckConstraint("CK_ACADEMIC_YEARS_status", "[status] IN ('ACTIVE', 'COMPLETED')");
             table.HasCheckConstraint("CK_ACADEMIC_YEARS_date_range", "[start_date] <= [end_date]");
         });
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasColumnType("bigint").ValueGeneratedOnAdd();
-        builder.Property(x => x.Name).HasColumnName("name").HasColumnType("varchar(200)").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Name).HasColumnName("name").HasColumnType("varchar(200)").HasMaxLength(200).UseCollation("SQL_Latin1_General_CP1_CI_AS").IsRequired();
         builder.Property(x => x.StartDate).HasColumnName("start_date").HasColumnType("date").IsRequired();
         builder.Property(x => x.EndDate).HasColumnName("end_date").HasColumnType("date").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasColumnType("varchar(10)").HasMaxLength(10).IsRequired();
@@ -23,5 +23,13 @@ public class AcademicYearConfiguration : IEntityTypeConfiguration<AcademicYear>
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
         builder.HasIndex(x => new { x.IsDeleted, x.Status }).HasDatabaseName("IX_ACADEMIC_YEARS_isDelete_status");
+        builder.HasIndex(x => x.Name)
+            .IsUnique()
+            .HasFilter("[isDelete] = 0")
+            .HasDatabaseName("UX_ACADEMIC_YEARS_name_not_deleted");
+        builder.HasIndex(x => x.Status)
+            .IsUnique()
+            .HasFilter("[isDelete] = 0 AND [status] = 'ACTIVE'")
+            .HasDatabaseName("UX_ACADEMIC_YEARS_active_not_deleted");
     }
 }

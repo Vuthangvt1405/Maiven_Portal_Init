@@ -1,22 +1,24 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Services.Interfaces;
+using Maiven_Portal_Managment.Services;
+using Maiven_Portal_Managment.Services.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maiven_Portal_Managment.Controllers;
 
 [ApiController]
-[Route("api/users")]
-public sealed class UserController(
-    IUserService userService,
-    ICurrentUserContext currentUserContext) : ControllerBase
+[Route("api/students")]
+[Authorize(Roles = SystemRoles.Student.Code)]
+public sealed class StudentController(
+    UserService userService,
+    CurrentUserContext currentUserContext) : ControllerBase
 {
     [HttpGet("me")]
-    [Authorize]
     [ProducesResponseType<CurrentUserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public ActionResult<CurrentUserResponse> Me()
     {
         if (!currentUserContext.IsAuthenticated ||
@@ -35,7 +37,6 @@ public sealed class UserController(
     }
 
     [HttpPut("profile")]
-    [Authorize(Roles = SystemRoles.Student.Code)]
     [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

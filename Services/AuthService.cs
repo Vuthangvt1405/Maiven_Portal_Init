@@ -3,16 +3,15 @@ using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Repository.Interfaces;
-using Maiven_Portal_Managment.Services.Interfaces;
+using Maiven_Portal_Managment.Repository;
 using Microsoft.AspNetCore.Identity;
 
 namespace Maiven_Portal_Managment.Services;
 
 public sealed class AuthService(
-    IAuthRepository authRepository,
+    AuthRepository authRepository,
     IPasswordHasher<UserModel> passwordHasher,
-    ITokenService tokenService) : IAuthService
+    JwtTokenService tokenService)
 {
     private const string InvalidCredentialsMessage = "Invalid email or password.";
 
@@ -46,8 +45,19 @@ public sealed class AuthService(
         return CreateAuthResponse(account);
     }
 
-    public async Task<AuthResponse> LoginAsync(
+    public Task<AuthResponse> LoginAsync(
         LoginRequest request,
+        CancellationToken cancellationToken) =>
+        AuthenticateAsync(request, requiredRoleCode: null, cancellationToken);
+
+    public Task<AuthResponse> LoginAdminAsync(
+        LoginRequest request,
+        CancellationToken cancellationToken) =>
+        AuthenticateAsync(request, SystemRoles.Admin.Code, cancellationToken);
+
+    private async Task<AuthResponse> AuthenticateAsync(
+        LoginRequest request,
+        string? requiredRoleCode,
         CancellationToken cancellationToken)
     {
         var normalizedEmail = NormalizeEmail(request.Email);
@@ -62,8 +72,13 @@ public sealed class AuthService(
             account.User,
             account.PasswordHash,
             request.Password);
+        var hasRequiredRole = requiredRoleCode is null || account.RoleCodes.Contains(
+            requiredRoleCode,
+            StringComparer.Ordinal);
 
-        if (verificationResult == PasswordVerificationResult.Failed || account.RoleCodes.Count == 0)
+        if (verificationResult == PasswordVerificationResult.Failed ||
+            account.RoleCodes.Count == 0 ||
+            !hasRequiredRole)
         {
             throw new UnauthorizedException(InvalidCredentialsMessage);
         }

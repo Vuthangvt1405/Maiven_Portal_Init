@@ -1,17 +1,15 @@
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
-using Maiven_Portal_Managment.Data.Entities.Enums;
 using Maiven_Portal_Managment.Dtos;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Models.Mappings;
-using Maiven_Portal_Managment.Repository.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Repository;
 
-public sealed class AuthRepository(AppDbContext dbContext) : IAuthRepository
+public sealed class AuthRepository(AppDbContext dbContext)
 {
     public Task<bool> EmailExistsAsync(
         string normalizedEmail,
@@ -31,8 +29,6 @@ public sealed class AuthRepository(AppDbContext dbContext) : IAuthRepository
             {
                 User = user,
                 RoleCodes = user.UserRoles
-                    .Where(userRole => userRole.Status == ActiveStatus.ACTIVE)
-                    .Where(userRole => userRole.Role.Status == ActiveStatus.ACTIVE)
                     .Select(userRole => userRole.Role.Code)
                     .Distinct()
                     .ToArray()
@@ -59,16 +55,15 @@ public sealed class AuthRepository(AppDbContext dbContext) : IAuthRepository
     {
         var studentRole = await dbContext.Roles
             .SingleOrDefaultAsync(
-                role => role.Code == SystemRoles.Student.Code && role.Status == ActiveStatus.ACTIVE,
+                role => role.Code == SystemRoles.Student.Code,
                 cancellationToken)
             ?? throw new InvalidOperationException(
-                $"The required active {SystemRoles.Student.Code} role is not configured.");
+                $"The required {SystemRoles.Student.Code} role is not configured.");
 
         var entity = user.ToNewEntity(passwordHash);
         entity.UserRoles.Add(new UserRole
         {
-            RoleId = studentRole.Id,
-            Status = ActiveStatus.ACTIVE
+            RoleId = studentRole.Id
         });
 
         dbContext.Users.Add(entity);

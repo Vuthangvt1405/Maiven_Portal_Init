@@ -11,7 +11,7 @@ public class CourseSectionConfiguration : IEntityTypeConfiguration<CourseSection
         builder.ToTable("COURSE_SECTIONS", table =>
         {
             table.HasCheckConstraint("CK_COURSE_SECTIONS_day_of_week", "[day_of_week] IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY')");
-            table.HasCheckConstraint("CK_COURSE_SECTIONS_status", "[status] IN ('PLANNED', 'OPEN', 'CLOSED', 'COMPLETED', 'CANCELLED')");
+            table.HasCheckConstraint("CK_COURSE_SECTIONS_status", "[status] IN ('OPEN', 'COMPLETED', 'CANCELLED')");
             table.HasCheckConstraint("CK_COURSE_SECTIONS_capacity", "[capacity] >= 0");
             table.HasCheckConstraint("CK_COURSE_SECTIONS_time_range", "[start_time] < [end_time]");
             table.HasCheckConstraint("CK_COURSE_SECTIONS_date_range", "[start_date] <= [end_date]");

@@ -8,9 +8,7 @@ using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Middleware;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
-using Maiven_Portal_Managment.Repository.Interfaces;
 using Maiven_Portal_Managment.Services;
-using Maiven_Portal_Managment.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -55,10 +53,12 @@ builder.Services
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<AuthRepository>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<AcademicYearRepository>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AcademicYearService>();
 builder.Services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
@@ -94,7 +94,6 @@ else
 }
 
 app.UseAuthentication();
-app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

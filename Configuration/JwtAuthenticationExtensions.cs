@@ -1,6 +1,5 @@
 using System.Text;
 using Maiven_Portal_Managment.Services;
-using Maiven_Portal_Managment.Services.Interfaces;
 using Maiven_Portal_Managment.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -29,10 +28,9 @@ public static class JwtAuthenticationExtensions
             .Validate(options => options.AccessTokenMinutes > 0, "JWT access token lifetime must be positive.")
             .ValidateOnStart();
 
-        services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<JwtTokenService>();
         services.AddScoped<CurrentUserContext>();
-        services.AddScoped<ICurrentUserContext>(serviceProvider =>
-            serviceProvider.GetRequiredService<CurrentUserContext>());
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

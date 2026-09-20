@@ -9,22 +9,18 @@ public class SemesterConfiguration : IEntityTypeConfiguration<Semester>
     public void Configure(EntityTypeBuilder<Semester> builder)
     {
         builder.ToTable("SEMESTERS", table =>
-        {
-            table.HasCheckConstraint("CK_SEMESTERS_status", "[status] IN ('PLANNED', 'ACTIVE', 'COMPLETED')");
-            table.HasCheckConstraint("CK_SEMESTERS_date_range", "[start_date] <= [end_date]");
-        });
+            table.HasCheckConstraint("CK_SEMESTERS_date_range", "[start_date] <= [end_date]"));
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasColumnType("bigint").ValueGeneratedOnAdd();
         builder.Property(x => x.AcademicYearId).HasColumnName("academic_year_id").HasColumnType("bigint").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasColumnType("varchar(200)").HasMaxLength(200).IsRequired();
         builder.Property(x => x.StartDate).HasColumnName("start_date").HasColumnType("date").IsRequired();
         builder.Property(x => x.EndDate).HasColumnName("end_date").HasColumnType("date").IsRequired();
-        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasColumnType("varchar(10)").HasMaxLength(10).IsRequired();
         builder.Property(x => x.IsDeleted).HasColumnName("isDelete").HasDefaultValue(false).IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
         builder.HasIndex(x => x.AcademicYearId).HasDatabaseName("IX_SEMESTERS_academic_year_id");
-        builder.HasIndex(x => new { x.IsDeleted, x.Status }).HasDatabaseName("IX_SEMESTERS_isDelete_status");
+        builder.HasIndex(x => x.IsDeleted).HasDatabaseName("IX_SEMESTERS_isDelete");
         builder.HasOne(x => x.AcademicYear).WithMany(x => x.Semesters).HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.NoAction);
     }
 }

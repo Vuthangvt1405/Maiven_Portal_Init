@@ -1,18 +1,14 @@
 using Maiven_Portal_Managment.Data.Entities;
 using ModelAcademicPeriodStatus = Maiven_Portal_Managment.Models.Enums.AcademicPeriodStatus;
 using ModelActiveStatus = Maiven_Portal_Managment.Models.Enums.ActiveStatus;
-using ModelAnnouncementStatus = Maiven_Portal_Managment.Models.Enums.AnnouncementStatus;
 using ModelCourseSectionStatus = Maiven_Portal_Managment.Models.Enums.CourseSectionStatus;
-using ModelEnrollmentStatus = Maiven_Portal_Managment.Models.Enums.EnrollmentStatus;
 using ModelGender = Maiven_Portal_Managment.Models.Enums.Gender;
 using ModelRegistrationPeriodStatus = Maiven_Portal_Managment.Models.Enums.RegistrationPeriodStatus;
 using ModelResultStatus = Maiven_Portal_Managment.Models.Enums.ResultStatus;
 using ModelWeekDay = Maiven_Portal_Managment.Models.Enums.WeekDay;
 using EntityAcademicPeriodStatus = Maiven_Portal_Managment.Data.Entities.Enums.AcademicPeriodStatus;
 using EntityActiveStatus = Maiven_Portal_Managment.Data.Entities.Enums.ActiveStatus;
-using EntityAnnouncementStatus = Maiven_Portal_Managment.Data.Entities.Enums.AnnouncementStatus;
 using EntityCourseSectionStatus = Maiven_Portal_Managment.Data.Entities.Enums.CourseSectionStatus;
-using EntityEnrollmentStatus = Maiven_Portal_Managment.Data.Entities.Enums.EnrollmentStatus;
 using EntityGender = Maiven_Portal_Managment.Data.Entities.Enums.Gender;
 using EntityRegistrationPeriodStatus = Maiven_Portal_Managment.Data.Entities.Enums.RegistrationPeriodStatus;
 using EntityResultStatus = Maiven_Portal_Managment.Data.Entities.Enums.ResultStatus;
@@ -62,7 +58,6 @@ public static class EntityModelMappings
         Code = entity.Code,
         Name = entity.Name,
         Description = entity.Description,
-        Status = MapEnum<ModelActiveStatus>(entity.Status),
         IsDeleted = entity.IsDeleted,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -80,7 +75,6 @@ public static class EntityModelMappings
         entity.Code = model.Code;
         entity.Name = model.Name;
         entity.Description = model.Description;
-        entity.Status = MapEnum<EntityActiveStatus>(model.Status);
     }
 
     public static UserRoleModel ToModel(this UserRole entity) => new()
@@ -88,7 +82,6 @@ public static class EntityModelMappings
         Id = entity.Id,
         UserId = entity.UserId,
         RoleId = entity.RoleId,
-        Status = MapEnum<ModelActiveStatus>(entity.Status),
         IsDeleted = entity.IsDeleted,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -105,7 +98,6 @@ public static class EntityModelMappings
     {
         entity.UserId = model.UserId;
         entity.RoleId = model.RoleId;
-        entity.Status = MapEnum<EntityActiveStatus>(model.Status);
     }
 
     public static AcademicYearModel ToModel(this AcademicYear entity) => new()
@@ -142,7 +134,6 @@ public static class EntityModelMappings
         Name = entity.Name,
         StartDate = entity.StartDate,
         EndDate = entity.EndDate,
-        Status = MapEnum<ModelAcademicPeriodStatus>(entity.Status),
         IsDeleted = entity.IsDeleted,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -161,7 +152,6 @@ public static class EntityModelMappings
         entity.Name = model.Name;
         entity.StartDate = model.StartDate;
         entity.EndDate = model.EndDate;
-        entity.Status = MapEnum<EntityAcademicPeriodStatus>(model.Status);
     }
 
     public static CourseModel ToModel(this Course entity) => new()
@@ -268,7 +258,6 @@ public static class EntityModelMappings
         Id = entity.Id,
         StudentUserRoleId = entity.StudentUserRoleId,
         SectionId = entity.SectionId,
-        Status = MapEnum<ModelEnrollmentStatus>(entity.Status),
         IsDeleted = entity.IsDeleted,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -285,7 +274,6 @@ public static class EntityModelMappings
     {
         entity.StudentUserRoleId = model.StudentUserRoleId;
         entity.SectionId = model.SectionId;
-        entity.Status = MapEnum<EntityEnrollmentStatus>(model.Status);
     }
 
     public static AnnouncementModel ToModel(this Announcement entity) => new()
@@ -295,7 +283,6 @@ public static class EntityModelMappings
         SectionId = entity.SectionId,
         Title = entity.Title,
         Content = entity.Content,
-        Status = MapEnum<ModelAnnouncementStatus>(entity.Status),
         IsDeleted = entity.IsDeleted,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -314,7 +301,6 @@ public static class EntityModelMappings
         entity.SectionId = model.SectionId;
         entity.Title = model.Title;
         entity.Content = model.Content;
-        entity.Status = MapEnum<EntityAnnouncementStatus>(model.Status);
     }
 
     public static GradeComponentModel ToModel(this GradeComponent entity) => new()

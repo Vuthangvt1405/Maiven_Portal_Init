@@ -1,15 +1,13 @@
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Models.Mappings;
-using Maiven_Portal_Managment.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-using EntityActiveStatus = Maiven_Portal_Managment.Data.Entities.Enums.ActiveStatus;
 using EntityGender = Maiven_Portal_Managment.Data.Entities.Enums.Gender;
 
 namespace Maiven_Portal_Managment.Repository;
 
-public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
+public sealed class UserRepository(AppDbContext dbContext)
 {
     public async Task<UserModel?> UpdateStudentProfileAsync(
         long userId,
@@ -20,8 +18,6 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
             .Where(user => user.Id == userId)
             .Where(user =>
                 user.UserRoles.Any(userRole =>
-                    userRole.Status == EntityActiveStatus.ACTIVE &&
-                    userRole.Role.Status == EntityActiveStatus.ACTIVE &&
                     userRole.Role.Code == SystemRoles.Student.Code))
             .SingleOrDefaultAsync(cancellationToken);
 

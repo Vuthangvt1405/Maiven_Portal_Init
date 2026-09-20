@@ -1,22 +1,30 @@
-using Maiven_Portal_Managment.Services.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Maiven_Portal_Managment.Services.Security;
 
-public sealed class CurrentUserContext : ICurrentUserContext
+public sealed class CurrentUserContext(IHttpContextAccessor httpContextAccessor)
 {
-    public bool IsAuthenticated { get; private set; }
-    public long? UserId { get; private set; }
-    public string? Email { get; private set; }
-    public IReadOnlyCollection<string> Roles { get; private set; } = [];
+    private HttpContext? HttpContext => httpContextAccessor.HttpContext;
 
-    internal void SetAuthenticatedUser(
-        long userId,
-        string email,
-        IReadOnlyCollection<string> roles)
+    public bool IsAuthenticated =>
+        HttpContext?.User.Identity?.IsAuthenticated == true;
+
+    public long? UserId
     {
-        IsAuthenticated = true;
-        UserId = userId;
-        Email = email;
-        Roles = roles;
+        get
+        {
+            var subject = HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            return long.TryParse(subject, out var userId) ? userId : null;
+        }
     }
+
+    public string? Email =>
+        HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
+
+    public IReadOnlyCollection<string> Roles => HttpContext?.User
+        .FindAll("role")
+        .Select(claim => claim.Value)
+        .Where(role => !string.IsNullOrWhiteSpace(role))
+        .Distinct(StringComparer.Ordinal)
+        .ToArray() ?? [];
 }

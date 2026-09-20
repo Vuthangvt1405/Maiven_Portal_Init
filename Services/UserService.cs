@@ -2,14 +2,14 @@ using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Repository.Interfaces;
-using Maiven_Portal_Managment.Services.Interfaces;
+using Maiven_Portal_Managment.Repository;
+using Maiven_Portal_Managment.Services.Security;
 
 namespace Maiven_Portal_Managment.Services;
 
 public sealed class UserService(
-    IUserRepository userRepository,
-    ICurrentUserContext currentUserContext) : IUserService
+    UserRepository userRepository,
+    CurrentUserContext currentUserContext)
 {
     public async Task<UserProfileResponse> UpdateCurrentStudentProfileAsync(
         UpdateUserProfileRequest request,

@@ -4,6 +4,7 @@ using Maiven_Portal_Managment.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maiven_Portal_Managment.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920142205_SeedDefaultAdmin")]
+    partial class SeedDefaultAdmin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,8 +54,7 @@ namespace Maiven_Portal_Managment.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)")
-                        .HasColumnName("name")
-                        .UseCollation("SQL_Latin1_General_CP1_CI_AS");
+                        .HasColumnName("name");
 
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date")
@@ -71,16 +73,6 @@ namespace Maiven_Portal_Managment.Migrations
                         .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ACADEMIC_YEARS_name_not_deleted")
-                        .HasFilter("[isDelete] = 0");
-
-                    b.HasIndex("Status")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ACADEMIC_YEARS_active_not_deleted")
-                        .HasFilter("[isDelete] = 0 AND [status] = 'ACTIVE'");
 
                     b.HasIndex("IsDeleted", "Status")
                         .HasDatabaseName("IX_ACADEMIC_YEARS_isDelete_status");

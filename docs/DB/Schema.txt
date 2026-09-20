@@ -20,7 +20,6 @@ erDiagram
         varchar code UK
         varchar name
         text description
-        enum status "ACTIVE | INACTIVE"
         boolean isDelete
         datetime created_at
         datetime updated_at
@@ -30,7 +29,6 @@ erDiagram
         bigint id PK
         bigint user_id FK
         bigint role_id FK
-        enum status "ACTIVE | INACTIVE"
         boolean isDelete
         datetime created_at
         datetime updated_at
@@ -45,7 +43,7 @@ erDiagram
         varchar name
         date start_date
         date end_date
-        enum status "PLANNED | ACTIVE | COMPLETED"
+        enum status "ACTIVE | COMPLETED"
         boolean isDelete
         datetime created_at
         datetime updated_at
@@ -57,7 +55,6 @@ erDiagram
         varchar name
         date start_date
         date end_date
-        enum status "PLANNED | ACTIVE | COMPLETED"
         boolean isDelete
         datetime created_at
         datetime updated_at
@@ -87,7 +84,7 @@ erDiagram
         time end_time
         date start_date
         date end_date
-        enum status "PLANNED | OPEN | CLOSED | COMPLETED | CANCELLED"
+        enum status "OPEN | COMPLETED | CANCELLED"
         boolean isDelete
         datetime created_at
         datetime updated_at
@@ -109,7 +106,6 @@ erDiagram
         bigint id PK
         bigint student_user_role_id FK
         bigint section_id FK
-        enum status "ENROLLED | DROPPED | COMPLETED"
         boolean isDelete
         datetime created_at
         datetime updated_at
@@ -121,7 +117,6 @@ erDiagram
         bigint section_id FK "nullable"
         varchar title
         text content
-        enum status "DRAFT | PUBLISHED | ARCHIVED"
         boolean isDelete
         datetime created_at
         datetime updated_at
@@ -144,7 +139,7 @@ erDiagram
         bigint id PK
         bigint enrollment_id FK
         bigint component_id FK
-        decimal score
+        decimal score "nullable"
         bigint updated_by FK
         boolean isDelete
         datetime updated_at
@@ -171,15 +166,10 @@ erDiagram
     %% =============================
     %% ENUM CONVENTIONS
     %% =============================
-    %% ROLES.status: ACTIVE | INACTIVE
-    %% USER_ROLES.status: ACTIVE | INACTIVE
-    %% ACADEMIC_YEARS.status: PLANNED | ACTIVE | COMPLETED
-    %% SEMESTERS.status: PLANNED | ACTIVE | COMPLETED
+    %% ACADEMIC_YEARS.status: ACTIVE | COMPLETED
     %% COURSES.status: ACTIVE | INACTIVE
-    %% COURSE_SECTIONS.status: PLANNED | OPEN | CLOSED | COMPLETED | CANCELLED
+    %% COURSE_SECTIONS.status: OPEN | COMPLETED | CANCELLED
     %% REGISTRATION_PERIODS.status: UPCOMING | OPEN | CLOSED
-    %% ENROLLMENTS.status: ENROLLED | DROPPED | COMPLETED
-    %% ANNOUNCEMENTS.status: DRAFT | PUBLISHED | ARCHIVED
     %% COURSE_RESULTS.result_status: PASS | FAIL | INCOMPLETE
     %% letter_grade remains varchar so the grading scale can change without schema migration.
 
