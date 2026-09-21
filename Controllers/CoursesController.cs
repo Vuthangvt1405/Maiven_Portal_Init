@@ -13,11 +13,6 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
 {
     [HttpPost]
     [Authorize(Roles = SystemRoles.Admin.Code)]
-    [ProducesResponseType<CourseResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CourseResponse>> Create(
         [FromBody] CreateCourseRequest request,
         CancellationToken cancellationToken)
@@ -31,7 +26,6 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
     }
 
     [HttpGet]
-    [ProducesResponseType<PagedResponse<CourseResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<CourseResponse>>> GetAll(
         [FromQuery] CourseQueryParameters parameters,
         CancellationToken cancellationToken)
@@ -59,8 +53,6 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
     }
 
     [HttpGet("{courseId:long}")]
-    [ProducesResponseType<CourseResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CourseResponse>> GetById(
         long courseId,
         CancellationToken cancellationToken)
@@ -71,12 +63,6 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
 
     [HttpPut("{courseId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
-    [ProducesResponseType<CourseResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CourseResponse>> Update(
         long courseId,
         [FromBody] UpdateCourseRequest request,
@@ -91,10 +77,6 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
 
     [HttpDelete("{courseId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
         long courseId,
         CancellationToken cancellationToken)

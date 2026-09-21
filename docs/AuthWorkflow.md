@@ -5,7 +5,7 @@
 | Method | URL | Authentication | Purpose |
 |---|---|---|---|
 | `POST` | `/api/auth/register` | Anonymous | Create a student account and return a JWT |
-| `POST` | `/api/auth/login` | Anonymous | Authenticate any account with at least one active role and return a JWT |
+| `POST` | `/api/auth/login` | Anonymous | Authenticate an active Student or Teacher account and return a JWT |
 | `POST` | `/api/auth/admin/login` | Anonymous | Authenticate an account with an active `ADMIN` role and return a JWT |
 
 ## Student registration
@@ -38,7 +38,7 @@ HTTP request
   -> HTTP 200 AuthResponse
 ```
 
-Unknown email, wrong password, deleted user, and accounts without an active role all return the same `401` response.
+Unknown email, wrong password, deleted user, accounts without an active role, and Admin accounts all return the same `401` response from the regular login endpoint.
 
 ## Admin bootstrap and login
 
@@ -59,7 +59,7 @@ HTTP POST /api/auth/admin/login
   -> HTTP 200 AuthResponse
 ```
 
-A non-admin account receives the same generic `401` response as invalid credentials. The regular `/api/auth/login` endpoint continues to accept admins. There is no admin registration endpoint; `/api/auth/register` always creates a student account.
+A non-admin account receives the same generic `401` response as invalid credentials. Admin accounts also receive `401` from the regular `/api/auth/login` endpoint and must use `/api/auth/admin/login`. There is no admin registration endpoint; `/api/auth/register` always creates a student account.
 
 ## JWT usage
 

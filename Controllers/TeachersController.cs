@@ -13,11 +13,6 @@ namespace Maiven_Portal_Managment.Controllers;
 public sealed class TeachersController(TeacherService teacherService) : ControllerBase
 {
     [HttpPost]
-    [ProducesResponseType<AuthUserResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AuthUserResponse>> Create(
         [FromBody] CreateTeacherRequest request,
         CancellationToken cancellationToken)

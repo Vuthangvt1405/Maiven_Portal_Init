@@ -28,6 +28,7 @@ public static class JwtAuthenticationExtensions
             .Validate(options => options.AccessTokenMinutes > 0, "JWT access token lifetime must be positive.")
             .ValidateOnStart();
 
+        //register this can help another service can see the current user context, eg: CurrentUserContext can ask through HttpContext to get the current user info
         services.AddHttpContextAccessor();
         services.AddScoped<JwtTokenService>();
         services.AddScoped<CurrentUserContext>();

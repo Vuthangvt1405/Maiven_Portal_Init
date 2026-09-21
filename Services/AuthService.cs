@@ -48,16 +48,16 @@ public sealed class AuthService(
     public Task<AuthResponse> LoginAsync(
         LoginRequest request,
         CancellationToken cancellationToken) =>
-        AuthenticateAsync(request, requiredRoleCode: null, cancellationToken);
+        AuthenticateAsync(request, isAdminLogin: false, cancellationToken);
 
     public Task<AuthResponse> LoginAdminAsync(
         LoginRequest request,
         CancellationToken cancellationToken) =>
-        AuthenticateAsync(request, SystemRoles.Admin.Code, cancellationToken);
+        AuthenticateAsync(request, isAdminLogin: true, cancellationToken);
 
     private async Task<AuthResponse> AuthenticateAsync(
         LoginRequest request,
-        string? requiredRoleCode,
+        bool isAdminLogin,
         CancellationToken cancellationToken)
     {
         var normalizedEmail = NormalizeEmail(request.Email);
@@ -75,15 +75,13 @@ public sealed class AuthService(
         var roleAssignment = account.RoleAssignments.Count == 1
             ? account.RoleAssignments.Single()
             : null;
-        var hasRequiredRole = requiredRoleCode is null ||
-            string.Equals(
-                roleAssignment?.RoleCode,
-                requiredRoleCode,
-                StringComparison.Ordinal);
+        var hasAllowedRole = IsAllowedLoginRole(
+            roleAssignment?.RoleCode,
+            isAdminLogin);
 
         if (verificationResult == PasswordVerificationResult.Failed ||
             roleAssignment is null ||
-            !hasRequiredRole)
+            !hasAllowedRole)
         {
             throw new UnauthorizedException(InvalidCredentialsMessage);
         }
@@ -127,6 +125,14 @@ public sealed class AuthService(
             }
         };
     }
+
+    private static bool IsAllowedLoginRole(
+        string? roleCode,
+        bool isAdminLogin) =>
+        isAdminLogin
+            ? string.Equals(roleCode, SystemRoles.Admin.Code, StringComparison.Ordinal)
+            : string.Equals(roleCode, SystemRoles.Student.Code, StringComparison.Ordinal) ||
+              string.Equals(roleCode, SystemRoles.Teacher.Code, StringComparison.Ordinal);
 
     private static string NormalizeEmail(string email) =>
         email.Trim().ToLowerInvariant();

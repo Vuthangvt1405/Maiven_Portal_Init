@@ -21,8 +21,8 @@ Content-Type: application/json
   "avatarUrl": null
 }
 
-### Login with any active account
-# The response user contains one `role` string and `roleUserId` (`USER_ROLES.id`).
+### Login as a Student or Teacher
+# Admin accounts must use /api/auth/admin/login. The response user contains one `role` string and `roleUserId` (`USER_ROLES.id`).
 POST {{host}}/api/auth/login
 Content-Type: application/json
 
@@ -117,9 +117,8 @@ Content-Type: application/json
   "endDate": "2027-01-15"
 }
 
-### List semesters (ADMIN only)
+### List semesters (public)
 GET {{host}}/api/semesters
-Authorization: Bearer {{adminToken}}
 Accept: application/json
 
 ### Update a semester (ADMIN only)

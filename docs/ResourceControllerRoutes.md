@@ -16,7 +16,7 @@ Controllers are grouped by the resource/service they expose. Roles authorize ope
 | Academic years | `GET` | `/api/academic-years` | Admin |
 | Academic years | `PUT` | `/api/academic-years/{academicYearId}` | Admin |
 | Semesters | `POST` | `/api/semesters` | Admin |
-| Semesters | `GET` | `/api/semesters` | Admin |
+| Semesters | `GET` | `/api/semesters` | Public |
 | Semesters | `PUT` | `/api/semesters/{semesterId}` | Admin |
 | Courses | `POST` | `/api/courses` | Admin |
 | Courses | `GET` | `/api/courses` | Public |
