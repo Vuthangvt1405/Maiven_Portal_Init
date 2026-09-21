@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Maiven_Portal_Managment.Configuration;
+using Maiven_Portal_Managment.Dtos;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Services.Security;
 using Microsoft.Extensions.Options;
@@ -15,7 +16,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options)
 
     public AccessTokenResult CreateAccessToken(
         UserModel user,
-        IReadOnlyCollection<string> roleCodes)
+        AuthRoleAssignment roleAssignment)
     {
         var issuedAtUtc = DateTime.UtcNow;
         var expiresAtUtc = issuedAtUtc.AddMinutes(_options.AccessTokenMinutes);
@@ -23,12 +24,10 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options)
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new("role", roleAssignment.RoleCode),
+            new("roleUserId", roleAssignment.RoleUserId.ToString())
         };
-
-        claims.AddRange(roleCodes
-            .Distinct(StringComparer.Ordinal)
-            .Select(roleCode => new Claim("role", roleCode)));
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);

@@ -57,10 +57,13 @@ builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AcademicYearRepository>();
 builder.Services.AddScoped<SemesterRepository>();
+builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TeacherService>();
 builder.Services.AddScoped<SemesterService>();
 builder.Services.AddScoped<AcademicYearService>();
+builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 

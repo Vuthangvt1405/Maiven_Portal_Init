@@ -12,5 +12,6 @@ public sealed class AuthUserResponse
     public string? Phone { get; init; }
     public string? Address { get; init; }
     public string? AvatarUrl { get; init; }
-    public IReadOnlyCollection<string> Roles { get; init; } = [];
+    public string Role { get; init; } = string.Empty;
+    public long RoleUserId { get; init; }
 }

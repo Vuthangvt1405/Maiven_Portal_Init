@@ -1,4 +1,3 @@
-﻿
 using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Models;
@@ -10,8 +9,7 @@ namespace Maiven_Portal_Managment.Controllers;
 
 [ApiController]
 [Route("api/courses")]
-public sealed class CoursesController(
-CourseService courseService) : ControllerBase
+public sealed class CoursesController(CourseService courseService) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = SystemRoles.Admin.Code)]
@@ -21,12 +19,10 @@ CourseService courseService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CourseResponse>> Create(
-    [FromBody] CreateCourseRequest request,
-    CancellationToken cancellationToken)
+        [FromBody] CreateCourseRequest request,
+        CancellationToken cancellationToken)
     {
-        var response = await courseService.CreateAsync(
-        request,
-        cancellationToken);
+        var response = await courseService.CreateAsync(request, cancellationToken);
 
         return CreatedAtAction(
             nameof(GetById),
@@ -40,20 +36,15 @@ CourseService courseService) : ControllerBase
         [FromQuery] CourseQueryParameters parameters,
         CancellationToken cancellationToken)
     {
-        var result = await courseService.GetPagedAsync(
-            parameters,
-            cancellationToken);
+        var result = await courseService.GetPagedAsync(parameters, cancellationToken);
 
         var pageNumber = parameters.PageNumber < 1
             ? 1
             : parameters.PageNumber;
-
         var pageSize = parameters.PageSize < 1
             ? 10
             : Math.Min(parameters.PageSize, 100);
-
-        var totalPages = (int)Math.Ceiling(
-            result.TotalItems / (double)pageSize);
+        var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
 
         var response = new PagedResponse<CourseResponse>
         {
@@ -74,10 +65,7 @@ CourseService courseService) : ControllerBase
         long courseId,
         CancellationToken cancellationToken)
     {
-        var response = await courseService.GetByIdAsync(
-            courseId,
-            cancellationToken);
-
+        var response = await courseService.GetByIdAsync(courseId, cancellationToken);
         return Ok(response);
     }
 
@@ -98,7 +86,6 @@ CourseService courseService) : ControllerBase
             courseId,
             request,
             cancellationToken);
-
         return Ok(response);
     }
 
@@ -112,12 +99,7 @@ CourseService courseService) : ControllerBase
         long courseId,
         CancellationToken cancellationToken)
     {
-        await courseService.DeleteAsync(
-            courseId,
-            cancellationToken);
-
+        await courseService.DeleteAsync(courseId, cancellationToken);
         return NoContent();
     }
-
-
 }

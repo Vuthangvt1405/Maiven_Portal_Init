@@ -11,7 +11,27 @@ public sealed class UserService(
     UserRepository userRepository,
     CurrentUserContext currentUserContext)
 {
-    public async Task<UserProfileResponse> UpdateCurrentStudentProfileAsync(
+    public CurrentUserResponse GetCurrentUser()
+    {
+        if (!currentUserContext.IsAuthenticated ||
+            currentUserContext.UserId is not long userId ||
+            string.IsNullOrWhiteSpace(currentUserContext.Email) ||
+            string.IsNullOrWhiteSpace(currentUserContext.Role) ||
+            currentUserContext.RoleUserId is not long roleUserId)
+        {
+            throw new UnauthorizedException("An authenticated user is required.");
+        }
+
+        return new CurrentUserResponse
+        {
+            Id = userId,
+            Email = currentUserContext.Email,
+            Role = currentUserContext.Role,
+            RoleUserId = roleUserId
+        };
+    }
+
+    public async Task<UserProfileResponse> UpdateCurrentUserProfileAsync(
         UpdateUserProfileRequest request,
         CancellationToken cancellationToken)
     {
@@ -31,14 +51,14 @@ public sealed class UserService(
             AvatarUrl = NormalizeOptional(request.AvatarUrl)
         };
 
-        var updatedUser = await userRepository.UpdateStudentProfileAsync(
+        var updatedUser = await userRepository.UpdateProfileAsync(
             userId,
             profile,
             cancellationToken);
 
         if (updatedUser is null)
         {
-            throw new NotFoundException("The active student account could not be found.");
+            throw new NotFoundException("The active user account could not be found.");
         }
 
         return new UserProfileResponse

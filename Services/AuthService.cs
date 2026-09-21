@@ -42,7 +42,7 @@ public sealed class AuthService(
             passwordHash,
             cancellationToken);
 
-        return CreateAuthResponse(account);
+        return CreateAuthResponse(account, account.RoleAssignments.Single());
     }
 
     public Task<AuthResponse> LoginAsync(
@@ -72,12 +72,17 @@ public sealed class AuthService(
             account.User,
             account.PasswordHash,
             request.Password);
-        var hasRequiredRole = requiredRoleCode is null || account.RoleCodes.Contains(
-            requiredRoleCode,
-            StringComparer.Ordinal);
+        var roleAssignment = account.RoleAssignments.Count == 1
+            ? account.RoleAssignments.Single()
+            : null;
+        var hasRequiredRole = requiredRoleCode is null ||
+            string.Equals(
+                roleAssignment?.RoleCode,
+                requiredRoleCode,
+                StringComparison.Ordinal);
 
         if (verificationResult == PasswordVerificationResult.Failed ||
-            account.RoleCodes.Count == 0 ||
+            roleAssignment is null ||
             !hasRequiredRole)
         {
             throw new UnauthorizedException(InvalidCredentialsMessage);
@@ -92,16 +97,16 @@ public sealed class AuthService(
                 cancellationToken);
         }
 
-        return CreateAuthResponse(account);
+        return CreateAuthResponse(account, roleAssignment);
     }
 
-    private AuthResponse CreateAuthResponse(AuthAccount account)
+    private AuthResponse CreateAuthResponse(
+        AuthAccount account,
+        AuthRoleAssignment roleAssignment)
     {
-        var roles = account.RoleCodes
-            .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-        var accessToken = tokenService.CreateAccessToken(account.User, roles);
+        var accessToken = tokenService.CreateAccessToken(
+            account.User,
+            roleAssignment);
 
         return new AuthResponse
         {
@@ -117,7 +122,8 @@ public sealed class AuthService(
                 Phone = account.User.Phone,
                 Address = account.User.Address,
                 AvatarUrl = account.User.AvatarUrl,
-                Roles = roles
+                Role = roleAssignment.RoleCode,
+                RoleUserId = roleAssignment.RoleUserId
             }
         };
     }

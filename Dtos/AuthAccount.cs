@@ -6,5 +6,5 @@ public sealed class AuthAccount
 {
     public UserModel User { get; init; } = new();
     public string PasswordHash { get; init; } = string.Empty;
-    public IReadOnlyCollection<string> RoleCodes { get; init; } = [];
+    public IReadOnlyCollection<AuthRoleAssignment> RoleAssignments { get; init; } = [];
 }

@@ -1,9 +1,13 @@
-@Maiven_Portal_Managment_HostAddress = http://localhost:5119
-@accessToken = REPLACE_WITH_LOGIN_OR_REGISTER_TOKEN
+@host = http://localhost:5119
+@studentToken = REPLACE_WITH_STUDENT_TOKEN
+@teacherToken = REPLACE_WITH_TEACHER_TOKEN
+@adminToken = REPLACE_WITH_ADMIN_TOKEN
 @academicYearId = 1
+@semesterId = 1
+@courseId = 1
 
-### Register a student account
-POST {{Maiven_Portal_Managment_HostAddress}}/api/auth/register
+### Register a student
+POST {{host}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -17,8 +21,9 @@ Content-Type: application/json
   "avatarUrl": null
 }
 
-### Login
-POST {{Maiven_Portal_Managment_HostAddress}}/api/auth/login
+### Login with any active account
+# The response user contains one `role` string and `roleUserId` (`USER_ROLES.id`).
+POST {{host}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -27,7 +32,7 @@ Content-Type: application/json
 }
 
 ### Login as the migration-seeded administrator
-POST {{Maiven_Portal_Managment_HostAddress}}/api/auth/admin/login
+POST {{host}}/api/auth/admin/login
 Content-Type: application/json
 
 {
@@ -35,19 +40,45 @@ Content-Type: application/json
   "password": "123456"
 }
 
-### Get the current student
-GET {{Maiven_Portal_Managment_HostAddress}}/api/students/me
-Authorization: Bearer {{accessToken}}
+### Get the current user (student, teacher, or admin)
+# Requires a newly issued token containing `role` and `roleUserId` claims.
+GET {{host}}/api/users/me
+Authorization: Bearer {{studentToken}}
 Accept: application/json
 
-### Get the current administrator
-GET {{Maiven_Portal_Managment_HostAddress}}/api/admin/me
-Authorization: Bearer {{accessToken}}
-Accept: application/json
+### Update the current user's profile
+PUT {{host}}/api/users/profile
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Updated User",
+  "dateOfBirth": "2000-01-01",
+  "gender": "OTHER",
+  "phone": null,
+  "address": null,
+  "avatarUrl": null
+}
+
+### Create a teacher (ADMIN only)
+POST {{host}}/api/teachers
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "teacher@example.com",
+  "password": "teacher-password",
+  "fullName": "Example Teacher",
+  "dateOfBirth": "1990-01-01",
+  "gender": "OTHER",
+  "phone": null,
+  "address": null,
+  "avatarUrl": null
+}
 
 ### Create an academic year (ADMIN only)
-POST {{Maiven_Portal_Managment_HostAddress}}/api/admin/academic-years
-Authorization: Bearer {{accessToken}}
+POST {{host}}/api/academic-years
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -58,18 +89,84 @@ Content-Type: application/json
 }
 
 ### List academic years (ADMIN only)
-GET {{Maiven_Portal_Managment_HostAddress}}/api/admin/academic-years
-Authorization: Bearer {{accessToken}}
+GET {{host}}/api/academic-years
+Authorization: Bearer {{adminToken}}
 Accept: application/json
 
-### Fully update an academic year (ADMIN only)
-PUT {{Maiven_Portal_Managment_HostAddress}}/api/admin/academic-years/{{academicYearId}}
-Authorization: Bearer {{accessToken}}
+### Update an academic year (ADMIN only)
+PUT {{host}}/api/academic-years/{{academicYearId}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
   "name": "2026-2027",
   "startDate": "2026-08-24",
   "endDate": "2027-07-02",
-  "status": "COMPLETED"
+  "status": "ACTIVE"
 }
+
+### Create a semester (ADMIN only)
+POST {{host}}/api/semesters
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "academicYearId": {{academicYearId}},
+  "name": "Semester 1",
+  "startDate": "2026-09-01",
+  "endDate": "2027-01-15"
+}
+
+### List semesters (ADMIN only)
+GET {{host}}/api/semesters
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Update a semester (ADMIN only)
+PUT {{host}}/api/semesters/{{semesterId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "academicYearId": {{academicYearId}},
+  "name": "Semester 1",
+  "startDate": "2026-09-01",
+  "endDate": "2027-01-20"
+}
+
+### Create a course (ADMIN only)
+POST {{host}}/api/courses
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "courseCode": "CS101",
+  "courseName": "Introduction to Computer Science",
+  "credits": 3,
+  "description": "Foundational computer science course",
+  "status": "ACTIVE"
+}
+
+### List courses (public)
+GET {{host}}/api/courses?pageNumber=1&pageSize=10
+Accept: application/json
+
+### Get a course (public)
+GET {{host}}/api/courses/{{courseId}}
+Accept: application/json
+
+### Update a course (ADMIN only)
+PUT {{host}}/api/courses/{{courseId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "courseName": "Introduction to Computer Science",
+  "credits": 4,
+  "description": "Updated course description",
+  "status": "ACTIVE"
+}
+
+### Delete a course (ADMIN only)
+DELETE {{host}}/api/courses/{{courseId}}
+Authorization: Bearer {{adminToken}}

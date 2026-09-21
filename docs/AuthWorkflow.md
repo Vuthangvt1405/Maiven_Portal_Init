@@ -69,4 +69,15 @@ Send the returned token to protected endpoints with:
 Authorization: Bearer <access-token>
 ```
 
-The token contains the user ID in `sub`, the email, a unique `jti`, and one `role` claim per active role.
+Each user has exactly one active role assignment. A filtered unique database index enforces this rule while allowing soft-deleted assignment history.
+
+Authentication responses expose the assignment as a singular role and its `USER_ROLES.id`:
+
+```json
+{
+  "role": "STUDENT",
+  "roleUserId": 42
+}
+```
+
+The `roles` array is no longer part of authentication or current-user responses. `roleUserId` is the exact `USER_ROLES.id`; the migration-seeded administrator keeps its reserved ID of `-1`, while normally created assignments use positive identity values. The token contains the user ID in `sub`, the email, a unique `jti`, one `role` claim, and one `roleUserId` claim. Existing tokens issued before this change do not contain `roleUserId`; users must log in again before calling `/api/users/me`.

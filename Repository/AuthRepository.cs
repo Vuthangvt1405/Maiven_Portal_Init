@@ -28,9 +28,12 @@ public sealed class AuthRepository(AppDbContext dbContext)
             .Select(user => new
             {
                 User = user,
-                RoleCodes = user.UserRoles
-                    .Select(userRole => userRole.Role.Code)
-                    .Distinct()
+                RoleAssignments = user.UserRoles
+                    .Select(userRole => new AuthRoleAssignment
+                    {
+                        RoleUserId = userRole.Id,
+                        RoleCode = userRole.Role.Code
+                    })
                     .ToArray()
             })
             .SingleOrDefaultAsync(cancellationToken);
@@ -44,7 +47,7 @@ public sealed class AuthRepository(AppDbContext dbContext)
         {
             User = result.User.ToModel(),
             PasswordHash = result.User.PasswordHash,
-            RoleCodes = result.RoleCodes
+            RoleAssignments = result.RoleAssignments
         };
     }
 
@@ -61,10 +64,11 @@ public sealed class AuthRepository(AppDbContext dbContext)
                 $"The required {SystemRoles.Student.Code} role is not configured.");
 
         var entity = user.ToNewEntity(passwordHash);
-        entity.UserRoles.Add(new UserRole
+        var userRole = new UserRole
         {
             RoleId = studentRole.Id
-        });
+        };
+        entity.UserRoles.Add(userRole);
 
         dbContext.Users.Add(entity);
 
@@ -81,7 +85,14 @@ public sealed class AuthRepository(AppDbContext dbContext)
         {
             User = entity.ToModel(),
             PasswordHash = entity.PasswordHash,
-            RoleCodes = [studentRole.Code]
+            RoleAssignments =
+            [
+                new AuthRoleAssignment
+                {
+                    RoleUserId = userRole.Id,
+                    RoleCode = studentRole.Code
+                }
+            ]
         };
     }
 
@@ -98,10 +109,11 @@ public sealed class AuthRepository(AppDbContext dbContext)
                 $"The required {SystemRoles.Teacher.Code} role is not configured.");
 
         var entity = user.ToNewEntity(passwordHash);
-        entity.UserRoles.Add(new UserRole
+        var userRole = new UserRole
         {
             RoleId = teacherRole.Id
-        });
+        };
+        entity.UserRoles.Add(userRole);
 
         dbContext.Users.Add(entity);
 
@@ -118,7 +130,14 @@ public sealed class AuthRepository(AppDbContext dbContext)
         {
             User = entity.ToModel(),
             PasswordHash = entity.PasswordHash,
-            RoleCodes = [teacherRole.Code]
+            RoleAssignments =
+            [
+                new AuthRoleAssignment
+                {
+                    RoleUserId = userRole.Id,
+                    RoleCode = teacherRole.Code
+                }
+            ]
         };
     }
 

@@ -16,7 +16,10 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         builder.Property(x => x.IsDeleted).HasColumnName("isDelete").HasDefaultValue(false).IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
-        builder.HasIndex(x => new { x.UserId, x.RoleId }).IsUnique().HasDatabaseName("UX_USER_ROLES_user_id_role_id");
+        builder.HasIndex(x => x.UserId)
+            .IsUnique()
+            .HasDatabaseName("UX_USER_ROLES_user_id_active")
+            .HasFilter("[isDelete] = 0");
         builder.HasIndex(x => x.RoleId).HasDatabaseName("IX_USER_ROLES_role_id");
         builder.HasIndex(x => x.IsDeleted).HasDatabaseName("IX_USER_ROLES_isDelete");
         builder.HasOne(x => x.User).WithMany(x => x.UserRoles).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.NoAction);

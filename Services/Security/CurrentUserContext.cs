@@ -21,10 +21,16 @@ public sealed class CurrentUserContext(IHttpContextAccessor httpContextAccessor)
     public string? Email =>
         HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
 
-    public IReadOnlyCollection<string> Roles => HttpContext?.User
-        .FindAll("role")
-        .Select(claim => claim.Value)
-        .Where(role => !string.IsNullOrWhiteSpace(role))
-        .Distinct(StringComparer.Ordinal)
-        .ToArray() ?? [];
+    public string? Role => HttpContext?.User.FindFirst("role")?.Value;
+
+    public long? RoleUserId
+    {
+        get
+        {
+            var roleUserId = HttpContext?.User.FindFirst("roleUserId")?.Value;
+            return long.TryParse(roleUserId, out var parsedRoleUserId)
+                ? parsedRoleUserId
+                : null;
+        }
+    }
 }

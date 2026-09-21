@@ -38,6 +38,8 @@ public sealed class TeacherService(
 			passwordHash,
 			cancellationToken);
 
+		var roleAssignment = account.RoleAssignments.Single();
+
 		return new AuthUserResponse
 		{
 			Id = account.User.Id,
@@ -48,7 +50,8 @@ public sealed class TeacherService(
 			Phone = account.User.Phone,
 			Address = account.User.Address,
 			AvatarUrl = account.User.AvatarUrl,
-			Roles = account.RoleCodes
+			Role = roleAssignment.RoleCode,
+			RoleUserId = roleAssignment.RoleUserId
 		};
 	}
 

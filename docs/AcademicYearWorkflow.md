@@ -6,9 +6,9 @@ All routes require a valid JWT containing the `ADMIN` role.
 
 | Method | URL | Success | Purpose |
 |---|---|---:|---|
-| `POST` | `/api/admin/academic-years` | `201` | Create an academic year |
-| `GET` | `/api/admin/academic-years` | `200` | List all non-deleted academic years |
-| `PUT` | `/api/admin/academic-years/{academicYearId}` | `200` | Fully replace an academic year |
+| `POST` | `/api/academic-years` | `201` | Create an academic year |
+| `GET` | `/api/academic-years` | `200` | List all non-deleted academic years |
+| `PUT` | `/api/academic-years/{academicYearId}` | `200` | Fully replace an academic year |
 
 The list is not paginated. It is ordered by `startDate` descending and then `id` descending. Deleted records are excluded and `isDeleted` is never exposed.
 
