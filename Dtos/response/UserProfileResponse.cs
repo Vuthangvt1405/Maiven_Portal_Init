@@ -10,6 +10,9 @@ public sealed class UserProfileResponse
 
     public string FullName { get; init; } = string.Empty;
 
+    public string Role { get; init; } = string.Empty;
+    public long RoleUserId { get; init; }
+
     public DateOnly? DateOfBirth { get; init; }
 
     public Gender? Gender { get; init; }
@@ -19,4 +22,5 @@ public sealed class UserProfileResponse
     public string? Address { get; init; }
 
     public string? AvatarUrl { get; init; }
+
 }

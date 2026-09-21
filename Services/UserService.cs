@@ -31,6 +31,54 @@ public sealed class UserService(
         };
     }
 
+    public async Task<IReadOnlyList<UserProfileResponse>> GetAllUserAsync(
+        CancellationToken cancellationToken)
+    {
+        var users = await userRepository.GetAllAsync(cancellationToken);
+
+        return users.Select(user => new UserProfileResponse
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+                Role = user.Role,
+                RoleUserId = user.RoleUserId,
+            DateOfBirth = user.DateOfBirth,
+            Gender = user.Gender,
+            Phone = user.Phone,
+            Address = user.Address,
+            AvatarUrl = user.AvatarUrl
+        }).ToArray();
+    }
+
+    public async Task<UserProfileResponse> GetUserByIdAsync(
+        long userId,
+        CancellationToken cancellationToken)
+    {
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new NotFoundException("The user account could not be found.");
+        }
+
+        return ToUserProfileResponse(user);
+    }
+
+    public async Task DeleteUserByIdAsync(
+        long userId,
+        CancellationToken cancellationToken)
+    {
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new NotFoundException("The user account could not be found.");
+        }
+
+        await userRepository.DeleteByIdAsync(userId, cancellationToken);
+    }
+
     public async Task<UserProfileResponse> UpdateCurrentUserProfileAsync(
         UpdateUserProfileRequest request,
         CancellationToken cancellationToken)
@@ -61,18 +109,22 @@ public sealed class UserService(
             throw new NotFoundException("The active user account could not be found.");
         }
 
-        return new UserProfileResponse
-        {
-            Id = updatedUser.Id,
-            Email = updatedUser.Email,
-            FullName = updatedUser.FullName,
-            DateOfBirth = updatedUser.DateOfBirth,
-            Gender = updatedUser.Gender,
-            Phone = updatedUser.Phone,
-            Address = updatedUser.Address,
-            AvatarUrl = updatedUser.AvatarUrl
-        };
+        return ToUserProfileResponse(updatedUser);
     }
+
+    private static UserProfileResponse ToUserProfileResponse(UserModel user) => new()
+    {
+        Id = user.Id,
+        Email = user.Email,
+        FullName = user.FullName,
+        Role = user.Role,
+        RoleUserId = user.RoleUserId,
+        DateOfBirth = user.DateOfBirth,
+        Gender = user.Gender,
+        Phone = user.Phone,
+        Address = user.Address,
+        AvatarUrl = user.AvatarUrl
+    };
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value)
