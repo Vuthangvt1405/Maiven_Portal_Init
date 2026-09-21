@@ -8,7 +8,6 @@ public sealed record CourseSectionResponse
     public long CourseId { get; set; }
     public long SemesterId { get; set; }
     public long TeacherUserRoleId { get; set; }
-    public long? RegistrationPeriodId { get; set; }
     public string SectionCode { get; set; } = string.Empty;
     public int Capacity { get; set; }
     public WeekDay DayOfWeek { get; set; }

@@ -1,7 +1,10 @@
 ﻿using Maiven_Portal_Managment.Dtos.request;
+
 using Maiven_Portal_Managment.Dtos.response;
+using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Services;
+using Maiven_Portal_Managment.Services.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +15,7 @@ namespace Maiven_Portal_Managment.Controllers;
 public sealed class CourseSectionsController(CourseSectionService courseSectionService) : ControllerBase
 {
 
-    [HttpGet ("course-sections")]
+    [HttpGet("course-sections")]
     [ProducesResponseType<PagedResponse<CourseSectionResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> GetAll(
         [FromQuery] CourseSectionQueryParameters parameters,
@@ -36,7 +39,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         return Ok(response);
     }
 
-    [HttpPost]
+    [HttpPost("course-sections")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<CourseSectionResponse>> Create(
         [FromBody] CreateCourseSectionRequest request,
@@ -61,27 +64,102 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
     }
 
     [Authorize(Roles = SystemRoles.Teacher.Code)]
-    [HttpGet("teacher/me/course-secions")]
-    public async Task<ActionResult<CourseSectionResponse>> TeacherGetById(
-        long courseSectionId,
+    [HttpGet("teachers/me/course-sections")]
+    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> TeacherGetAll(
+        [FromQuery] CourseSectionQueryParameters parameters,
+        CurrentUserContext currentTeacherContext,
         CancellationToken cancellationToken)
     {
-        var response = await courseSectionService.GetByIdAsync(courseSectionId, cancellationToken);
+        var teacherUserRoleId = currentTeacherContext.RoleUserId;
+        if (teacherUserRoleId is null)
+        {
+            return BadRequest("Invalid teacher user role ID.");
+        }
+
+        var result = await courseSectionService.TeacherGetPagedAsync(
+            teacherUserRoleId,
+            parameters,
+            cancellationToken);
+
+        var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
+        var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
+        var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
+
+        var response = new PagedResponse<CourseSectionResponse>
+        {
+            Items = result.Items,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalItems = result.TotalItems,
+            TotalPages = totalPages
+        };
+
         return Ok(response);
+    }
+    [Authorize(Roles = SystemRoles.Teacher.Code)]
+    [HttpGet("teachers/me/course-sections/{courseSectionId:long}")]
+    public async Task<ActionResult<CourseSectionDetailResponse>> TeacherGetSectionDetail(
+    [FromRoute] long courseSectionId,
+    [FromQuery] PaginationQueryParameters parameters,
+    CurrentUserContext currentTeacherContext,
+    CancellationToken cancellationToken)
+    {
+        var teacherUserRoleId = currentTeacherContext.RoleUserId;
+        if (teacherUserRoleId is null)
+        {
+            return BadRequest("Invalid teacher user role ID.");
+        }
+
+        var result = await courseSectionService.TeacherGetCourseSectionDetailsAsync(
+            teacherUserRoleId.Value,
+            courseSectionId,
+            parameters,
+            cancellationToken);
+
+        if (result == null)
+        {
+            return NotFound("Course section not found or you do not have permission to view it.");
+        }
+
+        return Ok(result);
     }
 
     [Authorize(Roles = SystemRoles.Student.Code)]
-    [HttpGet("student/me/course-secions")]
-    public async Task<ActionResult<CourseSectionResponse>> StudentGetById(
-        long courseSectionId,
+    [HttpGet("student/me/course-sections")]
+    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> StudentGetAll(
+        [FromQuery] CourseSectionQueryParameters parameters,
+        CurrentUserContext currentStudentContext,
         CancellationToken cancellationToken)
     {
-        var response = await courseSectionService.GetByIdAsync(courseSectionId, cancellationToken);
+        var studentUserRoleId = currentStudentContext.RoleUserId;
+        if (studentUserRoleId is null)
+        {
+            return BadRequest("Invalid student user role ID.");
+        }
+
+        var result = await courseSectionService.StudentGetPagedAsync(
+            studentUserRoleId,
+            parameters,
+            cancellationToken);
+
+        var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
+        var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
+        var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
+
+        var response = new PagedResponse<CourseSectionResponse>
+        {
+            Items = result.Items,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalItems = result.TotalItems,
+            TotalPages = totalPages
+        };
+
         return Ok(response);
     }
 
 
-    [HttpPut("{courseSectionId:long}")]
+    [HttpPut("course-sections/{courseSectionId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<CourseSectionResponse>> Update(
         long courseSectionId,
