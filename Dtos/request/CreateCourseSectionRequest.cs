@@ -14,8 +14,6 @@ public sealed record CreateCourseSectionRequest
     [Required]
     public long TeacherUserRoleId { get; set; }
 
-    public long? RegistrationPeriodId { get; set; }
-
     [Required]
     [MaxLength(50)]
     public string SectionCode { get; set; } = string.Empty;

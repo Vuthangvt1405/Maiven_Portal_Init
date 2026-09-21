@@ -5,8 +5,10 @@ namespace Maiven_Portal_Managment.Dtos.request;
 
 public sealed record UpdateCourseSectionRequest
 {
+    [Required]
     public long? TeacherUserRoleId { get; set; }
-
+    [Required]
+    public long? SemesterId { get; set; }
     [Required]
     [Range(1, 500)]
     public int Capacity { get; set; }
