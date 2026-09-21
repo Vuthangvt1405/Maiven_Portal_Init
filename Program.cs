@@ -5,6 +5,7 @@ using log4net;
 using log4net.Config;
 using Maiven_Portal_Managment.Configuration;
 using Maiven_Portal_Managment.Data;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Middleware;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
@@ -47,12 +48,14 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException(
         "The ConnectionStrings__DefaultConnection environment variable is not configured.");
 builder.Services
-    .AddControllers()
+    .AddControllers(options =>
+        options.Filters.AddService<ControllerActionLoggingFilter>())
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
-builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ActionLogService>();
+builder.Services.AddScoped<ControllerActionLoggingFilter>();
 
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<UserRepository>();
@@ -60,9 +63,7 @@ builder.Services.AddScoped<AcademicYearRepository>();
 builder.Services.AddScoped<SemesterRepository>();
 builder.Services.AddScoped<CourseSectionRepository>();
 builder.Services.AddScoped<CourseRepository>();
-
 builder.Services.AddScoped<AnnouncementRepository>();
-
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TeacherService>();
@@ -99,10 +100,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
-else
-{
-    app.UseHttpsRedirection();
 }
 
 app.UseAuthentication();
