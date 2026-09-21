@@ -1,4 +1,3 @@
-using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Models;
@@ -12,7 +11,9 @@ namespace Maiven_Portal_Managment.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = SystemRoles.Admin.Code)]
-public sealed class AdminController(CurrentUserContext currentUserContext, SemesterService semesterService) : ControllerBase
+public sealed class AdminController(
+    CurrentUserContext currentUserContext,
+    SemesterService semesterService) : ControllerBase
 {
     [HttpGet("me")]
     public ActionResult<CurrentUserResponse> Me()
@@ -33,11 +34,32 @@ public sealed class AdminController(CurrentUserContext currentUserContext, Semes
     }
 
     [HttpPost("semesters")]
-    public async Task<ActionResult<CreateSemesterResponse>> CreateSemester([FromBody] CreateSemesterRequest request)
+    public async Task<ActionResult<SemesterResponse>> CreateSemester(
+        [FromBody] CreateSemesterRequest request,
+        CancellationToken cancellationToken)
     {
+        var response = await semesterService.CreateAsync(request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
 
-        var response = await semesterService.CreateSemesterAsync(request);
+    [HttpGet("semesters")]
+    public async Task<ActionResult<IReadOnlyList<SemesterResponse>>> GetSemesters(
+        CancellationToken cancellationToken)
+    {
+        var response = await semesterService.GetAllAsync(cancellationToken);
+        return Ok(response);
+    }
 
+    [HttpPut("semesters/{semesterId:long}")]
+    public async Task<ActionResult<SemesterResponse>> UpdateSemester(
+        long semesterId,
+        [FromBody] UpdateSemesterRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await semesterService.UpdateAsync(
+            semesterId,
+            request,
+            cancellationToken);
         return Ok(response);
     }
 }

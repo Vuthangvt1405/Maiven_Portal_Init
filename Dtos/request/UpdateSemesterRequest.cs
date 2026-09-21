@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Maiven_Portal_Managment.Dtos.Request;
 
-public sealed class CreateSemesterRequest
+public sealed class UpdateSemesterRequest
 {
     [Range(1, long.MaxValue)]
     public long AcademicYearId { get; set; }

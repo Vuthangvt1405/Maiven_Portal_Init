@@ -12,9 +12,6 @@ public sealed class AuthController(AuthService authService) : ControllerBase
 {
     [HttpPost("register")]
     [AllowAnonymous]
-    [ProducesResponseType<AuthResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AuthResponse>> Register(
         [FromBody] RegisterRequest request,
         CancellationToken cancellationToken)
@@ -25,9 +22,6 @@ public sealed class AuthController(AuthService authService) : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponse>> Login(
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
@@ -38,9 +32,6 @@ public sealed class AuthController(AuthService authService) : ControllerBase
 
     [HttpPost("admin/login")]
     [AllowAnonymous]
-    [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponse>> LoginAdmin(
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)

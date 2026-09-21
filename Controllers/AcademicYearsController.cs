@@ -14,11 +14,6 @@ public sealed class AcademicYearsController(
     AcademicYearService academicYearService) : ControllerBase
 {
     [HttpPost]
-    [ProducesResponseType<AcademicYearResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AcademicYearResponse>> Create(
         [FromBody] CreateAcademicYearRequest request,
         CancellationToken cancellationToken)
@@ -28,9 +23,6 @@ public sealed class AcademicYearsController(
     }
 
     [HttpGet]
-    [ProducesResponseType<IReadOnlyList<AcademicYearResponse>>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<AcademicYearResponse>>> GetAll(
         CancellationToken cancellationToken)
     {
@@ -39,12 +31,6 @@ public sealed class AcademicYearsController(
     }
 
     [HttpPut("{academicYearId:long}")]
-    [ProducesResponseType<AcademicYearResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AcademicYearResponse>> Update(
         long academicYearId,
         [FromBody] UpdateAcademicYearRequest request,
