@@ -4,18 +4,17 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy file .csproj trước để tận dụng Docker layer cache
+# Project chính nằm ngay thư mục gốc repo, không có .sln liên quan ở đây
+# Copy .csproj trước để tận dụng Docker layer cache
 # (chỉ restore lại package khi .csproj thay đổi, không phải mỗi lần sửa code)
-COPY *.sln .
-COPY ["YourApp/YourApp.csproj", "YourApp/"]
-RUN dotnet restore "YourApp/YourApp.csproj"
+COPY ["Maiven_Portal_Managment.csproj", "./"]
+RUN dotnet restore "Maiven_Portal_Managment.csproj"
 
 # Copy toàn bộ source code còn lại
 COPY . .
-WORKDIR "/src/YourApp"
 
 # Build và publish ra thư mục /app/publish
-RUN dotnet publish -c Release -o /app/publish --no-restore
+RUN dotnet publish "Maiven_Portal_Managment.csproj" -c Release -o /app/publish --no-restore
 
 # =========================
 # Stage 2: Runtime
@@ -30,4 +29,4 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
-ENTRYPOINT ["dotnet", "YourApp.dll"]
+ENTRYPOINT ["dotnet", "Maiven_Portal_Managment.dll"]
