@@ -1,397 +1,268 @@
+using System.Collections.Concurrent;
+using System.Reflection;
 using Maiven_Portal_Managment.Data.Entities;
-using ModelAcademicPeriodStatus = Maiven_Portal_Managment.Models.Enums.AcademicPeriodStatus;
-using ModelActiveStatus = Maiven_Portal_Managment.Models.Enums.ActiveStatus;
-using ModelCourseSectionStatus = Maiven_Portal_Managment.Models.Enums.CourseSectionStatus;
-using ModelGender = Maiven_Portal_Managment.Models.Enums.Gender;
-using ModelRegistrationPeriodStatus = Maiven_Portal_Managment.Models.Enums.RegistrationPeriodStatus;
-using ModelResultStatus = Maiven_Portal_Managment.Models.Enums.ResultStatus;
-using ModelWeekDay = Maiven_Portal_Managment.Models.Enums.WeekDay;
-using EntityAcademicPeriodStatus = Maiven_Portal_Managment.Data.Entities.Enums.AcademicPeriodStatus;
-using EntityActiveStatus = Maiven_Portal_Managment.Data.Entities.Enums.ActiveStatus;
-using EntityCourseSectionStatus = Maiven_Portal_Managment.Data.Entities.Enums.CourseSectionStatus;
-using EntityGender = Maiven_Portal_Managment.Data.Entities.Enums.Gender;
-using EntityRegistrationPeriodStatus = Maiven_Portal_Managment.Data.Entities.Enums.RegistrationPeriodStatus;
-using EntityResultStatus = Maiven_Portal_Managment.Data.Entities.Enums.ResultStatus;
-using EntityWeekDay = Maiven_Portal_Managment.Data.Entities.Enums.WeekDay;
 
 namespace Maiven_Portal_Managment.Models.Mappings;
 
 public static class EntityModelMappings
 {
-    public static UserModel ToModel(this User entity) => new()
-    {
-        Id = entity.Id,
-        Email = entity.Email,
-        FullName = entity.FullName,
-        DateOfBirth = entity.DateOfBirth,
-        Gender = entity.Gender is null ? null : MapEnum<ModelGender>(entity.Gender.Value),
-        Phone = entity.Phone,
-        Address = entity.Address,
-        AvatarUrl = entity.AvatarUrl,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
+    public static UserModel ToModel(this User entity) =>
+        entity.ToModel<User, UserModel>();
 
     public static User ToNewEntity(this UserModel model, string passwordHash)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
         var entity = new User { PasswordHash = passwordHash };
-        model.ApplyToEntity(entity);
+        model.ApplyToEntity<UserModel, User>(entity);
         return entity;
     }
 
-    public static void ApplyToEntity(this UserModel model, User entity)
+    public static void ApplyToEntity(this UserModel model, User entity) =>
+        model.ApplyToEntity<UserModel, User>(entity);
+
+    public static RoleModel ToModel(this Role entity) =>
+        entity.ToModel<Role, RoleModel>();
+
+    public static Role ToNewEntity(this RoleModel model) =>
+        model.ToNewEntity<RoleModel, Role>();
+
+    public static void ApplyToEntity(this RoleModel model, Role entity) =>
+        model.ApplyToEntity<RoleModel, Role>(entity);
+
+    public static UserRoleModel ToModel(this UserRole entity) =>
+        entity.ToModel<UserRole, UserRoleModel>();
+
+    public static UserRole ToNewEntity(this UserRoleModel model) =>
+        model.ToNewEntity<UserRoleModel, UserRole>();
+
+    public static void ApplyToEntity(this UserRoleModel model, UserRole entity) =>
+        model.ApplyToEntity<UserRoleModel, UserRole>(entity);
+
+    public static AcademicYearModel ToModel(this AcademicYear entity) =>
+        entity.ToModel<AcademicYear, AcademicYearModel>();
+
+    public static AcademicYear ToNewEntity(this AcademicYearModel model) =>
+        model.ToNewEntity<AcademicYearModel, AcademicYear>();
+
+    public static void ApplyToEntity(this AcademicYearModel model, AcademicYear entity) =>
+        model.ApplyToEntity<AcademicYearModel, AcademicYear>(entity);
+
+    public static SemesterModel ToModel(this Semester entity) =>
+        entity.ToModel<Semester, SemesterModel>();
+
+    public static Semester ToNewEntity(this SemesterModel model) =>
+        model.ToNewEntity<SemesterModel, Semester>();
+
+    public static void ApplyToEntity(this SemesterModel model, Semester entity) =>
+        model.ApplyToEntity<SemesterModel, Semester>(entity);
+
+    public static CourseModel ToModel(this Course entity) =>
+        entity.ToModel<Course, CourseModel>();
+
+    public static Course ToNewEntity(this CourseModel model) =>
+        model.ToNewEntity<CourseModel, Course>();
+
+    public static void ApplyToEntity(this CourseModel model, Course entity) =>
+        model.ApplyToEntity<CourseModel, Course>(entity);
+
+    public static CourseSectionModel ToModel(this CourseSection entity) =>
+        entity.ToModel<CourseSection, CourseSectionModel>();
+
+    public static CourseSection ToNewEntity(this CourseSectionModel model) =>
+        model.ToNewEntity<CourseSectionModel, CourseSection>();
+
+    public static void ApplyToEntity(this CourseSectionModel model, CourseSection entity) =>
+        model.ApplyToEntity<CourseSectionModel, CourseSection>(entity);
+
+    public static RegistrationPeriodModel ToModel(this RegistrationPeriod entity) =>
+        entity.ToModel<RegistrationPeriod, RegistrationPeriodModel>();
+
+    public static RegistrationPeriod ToNewEntity(this RegistrationPeriodModel model) =>
+        model.ToNewEntity<RegistrationPeriodModel, RegistrationPeriod>();
+
+    public static void ApplyToEntity(this RegistrationPeriodModel model, RegistrationPeriod entity) =>
+        model.ApplyToEntity<RegistrationPeriodModel, RegistrationPeriod>(entity);
+
+    public static EnrollmentModel ToModel(this Enrollment entity) =>
+        entity.ToModel<Enrollment, EnrollmentModel>();
+
+    public static Enrollment ToNewEntity(this EnrollmentModel model) =>
+        model.ToNewEntity<EnrollmentModel, Enrollment>();
+
+    public static void ApplyToEntity(this EnrollmentModel model, Enrollment entity) =>
+        model.ApplyToEntity<EnrollmentModel, Enrollment>(entity);
+
+    public static AnnouncementModel ToModel(this Announcement entity) =>
+        entity.ToModel<Announcement, AnnouncementModel>();
+
+    public static Announcement ToNewEntity(this AnnouncementModel model) =>
+        model.ToNewEntity<AnnouncementModel, Announcement>();
+
+    public static void ApplyToEntity(this AnnouncementModel model, Announcement entity) =>
+        model.ApplyToEntity<AnnouncementModel, Announcement>(entity);
+
+    public static GradeComponentModel ToModel(this GradeComponent entity) =>
+        entity.ToModel<GradeComponent, GradeComponentModel>();
+
+    public static GradeComponent ToNewEntity(this GradeComponentModel model) =>
+        model.ToNewEntity<GradeComponentModel, GradeComponent>();
+
+    public static void ApplyToEntity(this GradeComponentModel model, GradeComponent entity) =>
+        model.ApplyToEntity<GradeComponentModel, GradeComponent>(entity);
+
+    public static StudentScoreModel ToModel(this StudentScore entity) =>
+        entity.ToModel<StudentScore, StudentScoreModel>();
+
+    public static StudentScore ToNewEntity(this StudentScoreModel model) =>
+        model.ToNewEntity<StudentScoreModel, StudentScore>();
+
+    public static void ApplyToEntity(this StudentScoreModel model, StudentScore entity) =>
+        model.ApplyToEntity<StudentScoreModel, StudentScore>(entity);
+
+    public static CourseResultModel ToModel(this CourseResult entity) =>
+        entity.ToModel<CourseResult, CourseResultModel>();
+
+    public static CourseResult ToNewEntity(this CourseResultModel model) =>
+        model.ToNewEntity<CourseResultModel, CourseResult>();
+
+    public static void ApplyToEntity(this CourseResultModel model, CourseResult entity) =>
+        model.ApplyToEntity<CourseResultModel, CourseResult>(entity);
+
+    public static TModel ToModel<TEntity, TModel>(this TEntity entity)
+        where TEntity : class
+        where TModel : class, new()
     {
-        entity.Email = model.Email;
-        entity.FullName = model.FullName;
-        entity.DateOfBirth = model.DateOfBirth;
-        entity.Gender = model.Gender is null ? null : MapEnum<EntityGender>(model.Gender.Value);
-        entity.Phone = model.Phone;
-        entity.Address = model.Address;
-        entity.AvatarUrl = model.AvatarUrl;
+        ArgumentNullException.ThrowIfNull(entity);
+        var model = new TModel();
+        CopyMatchingProperties(entity, model, forApply: false);
+        return model;
     }
 
-    public static RoleModel ToModel(this Role entity) => new()
+    public static void ApplyToEntity<TModel, TEntity>(this TModel model, TEntity entity)
+        where TModel : class
+        where TEntity : class
     {
-        Id = entity.Id,
-        Code = entity.Code,
-        Name = entity.Name,
-        Description = entity.Description,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(entity);
+        CopyMatchingProperties(model, entity, forApply: true);
+    }
 
-    public static Role ToNewEntity(this RoleModel model)
+    public static TEntity ToNewEntity<TModel, TEntity>(this TModel model)
+        where TModel : class
+        where TEntity : class, new()
     {
-        var entity = new Role();
-        model.ApplyToEntity(entity);
+        ArgumentNullException.ThrowIfNull(model);
+        var entity = new TEntity();
+        CopyMatchingProperties(model, entity, forApply: true);
         return entity;
     }
 
-    public static void ApplyToEntity(this RoleModel model, Role entity)
-    {
-        entity.Code = model.Code;
-        entity.Name = model.Name;
-        entity.Description = model.Description;
-    }
+    private static readonly ConcurrentDictionary<(Type Source, Type Dest, bool ForApply), IReadOnlyList<PropertyMap>> MapCache = new();
 
-    public static UserRoleModel ToModel(this UserRole entity) => new()
-    {
-        Id = entity.Id,
-        UserId = entity.UserId,
-        RoleId = entity.RoleId,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
+    private sealed record PropertyMap(
+        PropertyInfo Source,
+        PropertyInfo Dest,
+        bool NeedsEnumConversion);
 
-    public static UserRole ToNewEntity(this UserRoleModel model)
+    private static void CopyMatchingProperties(object source, object dest, bool forApply)
     {
-        var entity = new UserRole();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
+        var key = (source.GetType(), dest.GetType(), forApply);
+        var maps = MapCache.GetOrAdd(key, static k => BuildPropertyMaps(k.Source, k.Dest, k.ForApply));
 
-    public static void ApplyToEntity(this UserRoleModel model, UserRole entity)
-    {
-        entity.UserId = model.UserId;
-        entity.RoleId = model.RoleId;
-    }
-
-    public static AcademicYearModel ToModel(this AcademicYear entity) => new()
-    {
-        Id = entity.Id,
-        Name = entity.Name,
-        StartDate = entity.StartDate,
-        EndDate = entity.EndDate,
-        Status = MapEnum<ModelAcademicPeriodStatus>(entity.Status),
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static AcademicYear ToNewEntity(this AcademicYearModel model)
-    {
-        var entity = new AcademicYear();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this AcademicYearModel model, AcademicYear entity)
-    {
-        entity.Name = model.Name;
-        entity.StartDate = model.StartDate;
-        entity.EndDate = model.EndDate;
-        entity.Status = MapEnum<EntityAcademicPeriodStatus>(model.Status);
-    }
-
-    public static SemesterModel ToModel(this Semester entity) => new()
-    {
-        Id = entity.Id,
-        AcademicYearId = entity.AcademicYearId,
-        Name = entity.Name,
-        StartDate = entity.StartDate,
-        EndDate = entity.EndDate,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static Semester ToNewEntity(this SemesterModel model)
-    {
-        var entity = new Semester();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this SemesterModel model, Semester entity)
-    {
-        entity.AcademicYearId = model.AcademicYearId;
-        entity.Name = model.Name;
-        entity.StartDate = model.StartDate;
-        entity.EndDate = model.EndDate;
-    }
-
-    public static CourseModel ToModel(this Course entity) => new()
-    {
-        Id = entity.Id,
-        CourseCode = entity.CourseCode,
-        CourseName = entity.CourseName,
-        Credits = entity.Credits,
-        Description = entity.Description,
-        Status = MapEnum<ModelActiveStatus>(entity.Status),
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static Course ToNewEntity(this CourseModel model)
-    {
-        var entity = new Course();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this CourseModel model, Course entity)
-    {
-        entity.CourseCode = model.CourseCode;
-        entity.CourseName = model.CourseName;
-        entity.Credits = model.Credits;
-        entity.Description = model.Description;
-        entity.Status = MapEnum<EntityActiveStatus>(model.Status);
-    }
-
-    public static CourseSectionModel ToModel(this CourseSection entity) => new()
-    {
-        Id = entity.Id,
-        CourseId = entity.CourseId,
-        SemesterId = entity.SemesterId,
-        TeacherUserRoleId = entity.TeacherUserRoleId,
-        SectionCode = entity.SectionCode,
-        Capacity = entity.Capacity,
-        DayOfWeek = MapEnum<ModelWeekDay>(entity.DayOfWeek),
-        StartTime = entity.StartTime,
-        EndTime = entity.EndTime,
-        StartDate = entity.StartDate,
-        EndDate = entity.EndDate,
-        Status = MapEnum<ModelCourseSectionStatus>(entity.Status),
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static CourseSection ToNewEntity(this CourseSectionModel model)
-    {
-        var entity = new CourseSection();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this CourseSectionModel model, CourseSection entity)
-    {
-        entity.CourseId = model.CourseId;
-        entity.SemesterId = model.SemesterId;
-        entity.TeacherUserRoleId = model.TeacherUserRoleId;
-        entity.SectionCode = model.SectionCode;
-        entity.Capacity = model.Capacity;
-        entity.DayOfWeek = MapEnum<EntityWeekDay>(model.DayOfWeek);
-        entity.StartTime = model.StartTime;
-        entity.EndTime = model.EndTime;
-        entity.StartDate = model.StartDate;
-        entity.EndDate = model.EndDate;
-        entity.Status = MapEnum<EntityCourseSectionStatus>(model.Status);
-    }
-
-    public static RegistrationPeriodModel ToModel(this RegistrationPeriod entity) => new()
-    {
-        Id = entity.Id,
-        SemesterId = entity.SemesterId,
-        StartAt = entity.StartAt,
-        EndAt = entity.EndAt,
-        Status = MapEnum<ModelRegistrationPeriodStatus>(entity.Status),
-        CreatedById = entity.CreatedById,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static RegistrationPeriod ToNewEntity(this RegistrationPeriodModel model)
-    {
-        var entity = new RegistrationPeriod();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this RegistrationPeriodModel model, RegistrationPeriod entity)
-    {
-        entity.SemesterId = model.SemesterId;
-        entity.StartAt = model.StartAt;
-        entity.EndAt = model.EndAt;
-        entity.Status = MapEnum<EntityRegistrationPeriodStatus>(model.Status);
-        entity.CreatedById = model.CreatedById;
-    }
-
-    public static EnrollmentModel ToModel(this Enrollment entity) => new()
-    {
-        Id = entity.Id,
-        StudentUserRoleId = entity.StudentUserRoleId,
-        SectionId = entity.SectionId,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static Enrollment ToNewEntity(this EnrollmentModel model)
-    {
-        var entity = new Enrollment();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this EnrollmentModel model, Enrollment entity)
-    {
-        entity.StudentUserRoleId = model.StudentUserRoleId;
-        entity.SectionId = model.SectionId;
-    }
-
-    public static AnnouncementModel ToModel(this Announcement entity) => new()
-    {
-        Id = entity.Id,
-        CreatedById = entity.CreatedById,
-        SectionId = entity.SectionId,
-        Title = entity.Title,
-        Content = entity.Content,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static Announcement ToNewEntity(this AnnouncementModel model)
-    {
-        var entity = new Announcement();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this AnnouncementModel model, Announcement entity)
-    {
-        entity.CreatedById = model.CreatedById;
-        entity.SectionId = model.SectionId;
-        entity.Title = model.Title;
-        entity.Content = model.Content;
-    }
-
-    public static GradeComponentModel ToModel(this GradeComponent entity) => new()
-    {
-        Id = entity.Id,
-        SectionId = entity.SectionId,
-        Name = entity.Name,
-        Weight = entity.Weight,
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static GradeComponent ToNewEntity(this GradeComponentModel model)
-    {
-        var entity = new GradeComponent();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this GradeComponentModel model, GradeComponent entity)
-    {
-        entity.SectionId = model.SectionId;
-        entity.Name = model.Name;
-        entity.Weight = model.Weight;
-    }
-
-    public static StudentScoreModel ToModel(this StudentScore entity) => new()
-    {
-        Id = entity.Id,
-        EnrollmentId = entity.EnrollmentId,
-        ComponentId = entity.ComponentId,
-        Score = entity.Score,
-        UpdatedById = entity.UpdatedById,
-        IsDeleted = entity.IsDeleted,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static StudentScore ToNewEntity(this StudentScoreModel model)
-    {
-        var entity = new StudentScore();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this StudentScoreModel model, StudentScore entity)
-    {
-        entity.EnrollmentId = model.EnrollmentId;
-        entity.ComponentId = model.ComponentId;
-        entity.Score = model.Score;
-        entity.UpdatedById = model.UpdatedById;
-    }
-
-    public static CourseResultModel ToModel(this CourseResult entity) => new()
-    {
-        Id = entity.Id,
-        EnrollmentId = entity.EnrollmentId,
-        FinalScore = entity.FinalScore,
-        LetterGrade = entity.LetterGrade,
-        GradePoint = entity.GradePoint,
-        ResultStatus = entity.ResultStatus is null ? null : MapEnum<ModelResultStatus>(entity.ResultStatus.Value),
-        IsDeleted = entity.IsDeleted,
-        CreatedAt = entity.CreatedAt,
-        UpdatedAt = entity.UpdatedAt
-    };
-
-    public static CourseResult ToNewEntity(this CourseResultModel model)
-    {
-        var entity = new CourseResult();
-        model.ApplyToEntity(entity);
-        return entity;
-    }
-
-    public static void ApplyToEntity(this CourseResultModel model, CourseResult entity)
-    {
-        entity.EnrollmentId = model.EnrollmentId;
-        entity.FinalScore = model.FinalScore;
-        entity.LetterGrade = model.LetterGrade;
-        entity.GradePoint = model.GradePoint;
-        entity.ResultStatus = model.ResultStatus is null ? null : MapEnum<EntityResultStatus>(model.ResultStatus.Value);
-    }
-
-    private static TTarget MapEnum<TTarget>(Enum value)
-        where TTarget : struct, Enum
-    {
-        if (Enum.TryParse<TTarget>(value.ToString(), ignoreCase: false, out var mappedValue))
+        foreach (var map in maps)
         {
-            return mappedValue;
+            var value = map.Source.GetValue(source);
+            if (map.NeedsEnumConversion)
+            {
+                value = ConvertEnumByName(value, map.Dest.PropertyType);
+            }
+
+            map.Dest.SetValue(dest, value);
+        }
+    }
+
+    private static IReadOnlyList<PropertyMap> BuildPropertyMaps(Type sourceType, Type destType, bool forApply)
+    {
+        var destProps = destType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanWrite)
+            .ToDictionary(p => p.Name, p => p, StringComparer.Ordinal);
+
+        var maps = new List<PropertyMap>();
+        foreach (var sourceProp in sourceType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (!sourceProp.CanRead || sourceProp.GetIndexParameters().Length != 0)
+            {
+                continue;
+            }
+
+            if (forApply && (sourceProp.Name is nameof(EntityBase.Id)
+                or nameof(EntityBase.IsDeleted)
+                or nameof(EntityBase.CreatedAt)
+                or nameof(EntityBase.UpdatedAt)))
+            {
+                continue;
+            }
+
+            if (!destProps.TryGetValue(sourceProp.Name, out var destProp))
+            {
+                continue;
+            }
+
+            if (destProp.GetIndexParameters().Length != 0)
+            {
+                continue;
+            }
+
+            if (destProp.PropertyType.IsAssignableFrom(sourceProp.PropertyType))
+            {
+                maps.Add(new PropertyMap(sourceProp, destProp, NeedsEnumConversion: false));
+            }
+            else if (GetEnumType(sourceProp.PropertyType) is not null
+                && GetEnumType(destProp.PropertyType) is not null)
+            {
+                maps.Add(new PropertyMap(sourceProp, destProp, NeedsEnumConversion: true));
+            }
+        }
+
+        return maps;
+    }
+
+    private static Type? GetEnumType(Type type)
+    {
+        if (type.IsEnum)
+        {
+            return type;
+        }
+
+        var underlying = Nullable.GetUnderlyingType(type);
+        return underlying is not null && underlying.IsEnum ? underlying : null;
+    }
+
+    private static object? ConvertEnumByName(object? value, Type destPropertyType)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        var destEnumType = GetEnumType(destPropertyType);
+        if (destEnumType is null)
+        {
+            return value;
+        }
+
+        var name = value.ToString();
+        if (string.IsNullOrEmpty(name))
+        {
+            return null;
+        }
+
+        if (Enum.TryParse(destEnumType, name, ignoreCase: false, out var parsed))
+        {
+            return parsed;
         }
 
         throw new InvalidOperationException(
-            $"Enum value '{value}' from {value.GetType().FullName} has no matching value in {typeof(TTarget).FullName}.");
+            $"Enum value '{value}' has no matching value in {destEnumType.FullName}.");
     }
 }
