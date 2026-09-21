@@ -85,6 +85,43 @@ public sealed class AuthRepository(AppDbContext dbContext)
         };
     }
 
+    public async Task<AuthAccount> CreateTeacherAsync(
+        UserModel user,
+        string passwordHash,
+        CancellationToken cancellationToken)
+    {
+        var teacherRole = await dbContext.Roles
+            .SingleOrDefaultAsync(
+                role => role.Code == SystemRoles.Teacher.Code,
+                cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"The required {SystemRoles.Teacher.Code} role is not configured.");
+
+        var entity = user.ToNewEntity(passwordHash);
+        entity.UserRoles.Add(new UserRole
+        {
+            RoleId = teacherRole.Id
+        });
+
+        dbContext.Users.Add(entity);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
+        {
+            throw new ConflictException("An account with this email already exists.", exception);
+        }
+
+        return new AuthAccount
+        {
+            User = entity.ToModel(),
+            PasswordHash = entity.PasswordHash,
+            RoleCodes = [teacherRole.Code]
+        };
+    }
+
     public async Task UpdatePasswordHashAsync(
         long userId,
         string passwordHash,
