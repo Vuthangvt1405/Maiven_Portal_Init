@@ -60,11 +60,9 @@ builder.Services.AddScoped<AcademicYearRepository>();
 builder.Services.AddScoped<SemesterRepository>();
 builder.Services.AddScoped<CourseSectionRepository>();
 builder.Services.AddScoped<CourseRepository>();
-<<<<<<< Program.cs
 
-=======
 builder.Services.AddScoped<AnnouncementRepository>();
->>>>>>> Program.cs
+
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TeacherService>();
