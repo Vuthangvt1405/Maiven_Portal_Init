@@ -1,5 +1,8 @@
+using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Models;
+using Maiven_Portal_Managment.Services;
 using Maiven_Portal_Managment.Services.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,12 +12,9 @@ namespace Maiven_Portal_Managment.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = SystemRoles.Admin.Code)]
-public sealed class AdminController(CurrentUserContext currentUserContext) : ControllerBase
+public sealed class AdminController(CurrentUserContext currentUserContext, SemesterService semesterService) : ControllerBase
 {
     [HttpGet("me")]
-    [ProducesResponseType<CurrentUserResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public ActionResult<CurrentUserResponse> Me()
     {
         if (!currentUserContext.IsAuthenticated ||
@@ -30,5 +30,14 @@ public sealed class AdminController(CurrentUserContext currentUserContext) : Con
             Email = currentUserContext.Email,
             Roles = currentUserContext.Roles
         });
+    }
+
+    [HttpPost("semesters")]
+    public async Task<ActionResult<CreateSemesterResponse>> CreateSemester([FromBody] CreateSemesterRequest request)
+    {
+
+        var response = await semesterService.CreateSemesterAsync(request);
+
+        return Ok(response);
     }
 }
