@@ -1,6 +1,7 @@
 ﻿using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Models.Enums;
 using Maiven_Portal_Managment.Repository;
@@ -9,7 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Services;
 
-public sealed class CourseSectionService(CourseSectionRepository courseSectionRepository)
+public sealed class CourseSectionService(
+    CourseSectionRepository courseSectionRepository,
+    ActionLogService actionLogService)
 {
     private const string DuplicateSectionCodeMessage =
         "A course section with the same code already exists in this semester.";
@@ -27,6 +30,12 @@ public sealed class CourseSectionService(CourseSectionRepository courseSectionRe
         CreateCourseSectionRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseSectionService>(
+            "Service",
+            nameof(CreateAsync),
+            ("CourseId", request.CourseId),
+            ("SemesterId", request.SemesterId),
+            ("TeacherUserRoleId", request.TeacherUserRoleId));
         ValidateScheduleAndCapacity(
             request.StartTime,
             request.EndTime,
@@ -71,7 +80,9 @@ public sealed class CourseSectionService(CourseSectionRepository courseSectionRe
         try
         {
             var created = await courseSectionRepository.AddAsync(model, cancellationToken);
-            return ToResponse(created);
+            var response = ToResponse(created);
+            operation.Complete(("CourseSectionId", response.Id));
+            return response;
         }
         catch (DbUpdateException exception)
         {
@@ -89,6 +100,14 @@ public sealed class CourseSectionService(CourseSectionRepository courseSectionRe
         CourseSectionQueryParameters parameters,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseSectionService>(
+            "Service",
+            nameof(GetPagedAsync),
+            ("CourseId", parameters.CourseId),
+            ("SemesterId", parameters.SemesterId),
+            ("TeacherUserRoleId", parameters.TeacherUserRoleId),
+            ("RequestedPageNumber", parameters.PageNumber),
+            ("RequestedPageSize", parameters.PageSize));
         var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
 
@@ -107,6 +126,11 @@ public sealed class CourseSectionService(CourseSectionRepository courseSectionRe
             .Select(ToResponse)
             .ToArray();
 
+        operation.Complete(
+            ("PageNumber", pageNumber),
+            ("PageSize", pageSize),
+            ("ResultCount", items.Length),
+            ("TotalItems", result.TotalItems));
         return (items, result.TotalItems);
     }
 
@@ -114,13 +138,19 @@ public sealed class CourseSectionService(CourseSectionRepository courseSectionRe
         long sectionId,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseSectionService>(
+            "Service",
+            nameof(GetByIdAsync),
+            ("CourseSectionId", sectionId));
         var section = await courseSectionRepository.GetByIdAsync(sectionId, cancellationToken);
         if (section is null)
         {
             throw new NotFoundException("The course section could not be found.");
         }
 
-        return ToResponse(section);
+        var response = ToResponse(section);
+        operation.Complete(("CourseSectionId", response.Id));
+        return response;
     }
 
     public async Task<CourseSectionResponse> UpdateAsync(
@@ -128,6 +158,10 @@ public sealed class CourseSectionService(CourseSectionRepository courseSectionRe
         UpdateCourseSectionRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseSectionService>(
+            "Service",
+            nameof(UpdateAsync),
+            ("CourseSectionId", sectionId));
         var existing = await courseSectionRepository.GetByIdAsync(sectionId, cancellationToken);
         if (existing is null)
         {
@@ -163,7 +197,9 @@ public sealed class CourseSectionService(CourseSectionRepository courseSectionRe
                 throw new NotFoundException("The course section could not be found.");
             }
 
-            return ToResponse(updated);
+            var response = ToResponse(updated);
+            operation.Complete(("CourseSectionId", response.Id));
+            return response;
         }
         catch (DbUpdateException exception)
         {

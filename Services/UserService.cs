@@ -1,6 +1,7 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
 using Maiven_Portal_Managment.Services.Security;
@@ -9,10 +10,15 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class UserService(
     UserRepository userRepository,
-    CurrentUserContext currentUserContext)
+    CurrentUserContext currentUserContext,
+    ActionLogService actionLogService)
 {
     public CurrentUserResponse GetCurrentUser()
     {
+        using var operation = actionLogService.Begin<UserService>(
+            "Service",
+            nameof(GetCurrentUser));
+
         if (!currentUserContext.IsAuthenticated ||
             currentUserContext.UserId is not long userId ||
             string.IsNullOrWhiteSpace(currentUserContext.Email) ||
@@ -22,39 +28,50 @@ public sealed class UserService(
             throw new UnauthorizedException("An authenticated user is required.");
         }
 
-        return new CurrentUserResponse
+        var response = new CurrentUserResponse
         {
             Id = userId,
             Email = currentUserContext.Email,
             Role = currentUserContext.Role,
             RoleUserId = roleUserId
         };
+        operation.Complete(("UserId", response.Id), ("Role", response.Role));
+        return response;
     }
 
     public async Task<IReadOnlyList<UserProfileResponse>> GetAllUserAsync(
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<UserService>(
+            "Service",
+            nameof(GetAllUserAsync));
         var users = await userRepository.GetAllAsync(cancellationToken);
 
-        return users.Select(user => new UserProfileResponse
+        var response = users.Select(user => new UserProfileResponse
         {
             Id = user.Id,
             Email = user.Email,
             FullName = user.FullName,
-                Role = user.Role,
-                RoleUserId = user.RoleUserId,
+            Role = user.Role,
+            RoleUserId = user.RoleUserId,
             DateOfBirth = user.DateOfBirth,
             Gender = user.Gender,
             Phone = user.Phone,
             Address = user.Address,
             AvatarUrl = user.AvatarUrl
         }).ToArray();
+        operation.Complete(("ResultCount", response.Length));
+        return response;
     }
 
     public async Task<UserProfileResponse> GetUserByIdAsync(
         long userId,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<UserService>(
+            "Service",
+            nameof(GetUserByIdAsync),
+            ("TargetUserId", userId));
         var user = await userRepository.GetByIdAsync(userId, cancellationToken);
 
         if (user is null)
@@ -62,13 +79,19 @@ public sealed class UserService(
             throw new NotFoundException("The user account could not be found.");
         }
 
-        return ToUserProfileResponse(user);
+        var response = ToUserProfileResponse(user);
+        operation.Complete(("TargetUserId", response.Id));
+        return response;
     }
 
     public async Task DeleteUserByIdAsync(
         long userId,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<UserService>(
+            "Service",
+            nameof(DeleteUserByIdAsync),
+            ("TargetUserId", userId));
         var user = await userRepository.GetByIdAsync(userId, cancellationToken);
 
         if (user is null)
@@ -77,12 +100,17 @@ public sealed class UserService(
         }
 
         await userRepository.DeleteByIdAsync(userId, cancellationToken);
+        operation.Complete(("TargetUserId", userId));
     }
 
     public async Task<UserProfileResponse> UpdateCurrentUserProfileAsync(
         UpdateUserProfileRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<UserService>(
+            "Service",
+            nameof(UpdateCurrentUserProfileAsync));
+
         if (!currentUserContext.IsAuthenticated ||
             currentUserContext.UserId is not long userId)
         {
@@ -109,7 +137,9 @@ public sealed class UserService(
             throw new NotFoundException("The active user account could not be found.");
         }
 
-        return ToUserProfileResponse(updatedUser);
+        var response = ToUserProfileResponse(updatedUser);
+        operation.Complete(("UserId", response.Id));
+        return response;
     }
 
     private static UserProfileResponse ToUserProfileResponse(UserModel user) => new()

@@ -1,6 +1,7 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Models.Enums;
 using Maiven_Portal_Managment.Repository;
@@ -9,7 +10,8 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class SemesterService(
     SemesterRepository semesterRepository,
-    AcademicYearRepository academicYearRepository)
+    AcademicYearRepository academicYearRepository,
+    ActionLogService actionLogService)
 {
     private const string AcademicYearNotFoundMessage =
         "The academic year could not be found.";
@@ -26,6 +28,10 @@ public sealed class SemesterService(
         CreateSemesterRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<SemesterService>(
+            "Service",
+            nameof(CreateAsync),
+            ("AcademicYearId", request.AcademicYearId));
         var model = BuildModel(
             request.AcademicYearId,
             request.Name,
@@ -36,14 +42,23 @@ public sealed class SemesterService(
         await ValidateConflictsAsync(model, null, cancellationToken);
 
         var created = await semesterRepository.CreateAsync(model, cancellationToken);
-        return ToResponse(created);
+        var response = ToResponse(created);
+        operation.Complete(
+            ("SemesterId", response.Id),
+            ("AcademicYearId", response.AcademicYearId));
+        return response;
     }
 
     public async Task<IReadOnlyList<SemesterResponse>> GetAllAsync(
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<SemesterService>(
+            "Service",
+            nameof(GetAllAsync));
         var semesters = await semesterRepository.GetAllAsync(cancellationToken);
-        return semesters.Select(ToResponse).ToArray();
+        var response = semesters.Select(ToResponse).ToArray();
+        operation.Complete(("ResultCount", response.Length));
+        return response;
     }
 
     public async Task<SemesterResponse> UpdateAsync(
@@ -51,6 +66,10 @@ public sealed class SemesterService(
         UpdateSemesterRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<SemesterService>(
+            "Service",
+            nameof(UpdateAsync),
+            ("SemesterId", semesterId));
         if (semesterId <= 0)
         {
             throw new BadRequestException(
@@ -94,7 +113,11 @@ public sealed class SemesterService(
             throw new NotFoundException("The semester could not be found.");
         }
 
-        return ToResponse(updated);
+        var response = ToResponse(updated);
+        operation.Complete(
+            ("SemesterId", response.Id),
+            ("AcademicYearId", response.AcademicYearId));
+        return response;
     }
 
     private async Task ValidateAcademicYearAsync(

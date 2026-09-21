@@ -1,6 +1,7 @@
 using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
 using Maiven_Portal_Managment.Services.Security;
@@ -9,12 +10,19 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class AnnouncementService(
     AnnouncementRepository announcementRepository,
-    CurrentUserContext currentUserContext)
+    CurrentUserContext currentUserContext,
+    ActionLogService actionLogService)
 {
     public async Task<AnnouncementResponse> CreateAsync(CreateAnnouncementRequest request, CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AnnouncementService>(
+            "Service",
+            nameof(CreateAsync),
+            ("CourseSectionId", request.SectionId));
         var model = BuildModel(GetCurrentUserId(), request.SectionId, request.Title, request.Content);
-        return ToResponse(await announcementRepository.AddAsync(model, cancellationToken));
+        var response = ToResponse(await announcementRepository.AddAsync(model, cancellationToken));
+        operation.Complete(("AnnouncementId", response.Id));
+        return response;
     }
 
     public async Task<(IReadOnlyList<AnnouncementResponse> Items, int TotalItems)> GetPagedAsync(
@@ -24,16 +32,32 @@ public sealed class AnnouncementService(
         int pageSize,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AnnouncementService>(
+            "Service",
+            nameof(GetPagedAsync),
+            ("CourseSectionId", sectionId),
+            ("PageNumber", pageNumber),
+            ("PageSize", pageSize));
         var result = await announcementRepository.GetPagedAsync(
             sectionId, title, pageNumber, pageSize, cancellationToken);
-        return (result.Items.Select(ToResponse).ToArray(), result.TotalItems);
+        var items = result.Items.Select(ToResponse).ToArray();
+        operation.Complete(
+            ("ResultCount", items.Length),
+            ("TotalItems", result.TotalItems));
+        return (items, result.TotalItems);
     }
 
     public async Task<AnnouncementResponse> GetByIdAsync(long announcementId, CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AnnouncementService>(
+            "Service",
+            nameof(GetByIdAsync),
+            ("AnnouncementId", announcementId));
         var announcement = await announcementRepository.GetByIdAsync(announcementId, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
-        return ToResponse(announcement);
+        var response = ToResponse(announcement);
+        operation.Complete(("AnnouncementId", response.Id));
+        return response;
     }
 
     public async Task<AnnouncementResponse> UpdateAsync(
@@ -41,6 +65,10 @@ public sealed class AnnouncementService(
         UpdateAnnouncementRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AnnouncementService>(
+            "Service",
+            nameof(UpdateAsync),
+            ("AnnouncementId", announcementId));
         var existing = await announcementRepository.GetByIdAsync(announcementId, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
         EnsureOwnerOrAdmin(existing.CreatedById);
@@ -49,11 +77,17 @@ public sealed class AnnouncementService(
         updated.Id = announcementId;
         var result = await announcementRepository.UpdateAsync(updated, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
-        return ToResponse(result);
+        var response = ToResponse(result);
+        operation.Complete(("AnnouncementId", response.Id));
+        return response;
     }
 
     public async Task DeleteAsync(long announcementId, CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AnnouncementService>(
+            "Service",
+            nameof(DeleteAsync),
+            ("AnnouncementId", announcementId));
         var existing = await announcementRepository.GetByIdAsync(announcementId, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
         EnsureOwnerOrAdmin(existing.CreatedById);
@@ -62,6 +96,8 @@ public sealed class AnnouncementService(
         {
             throw new NotFoundException("The announcement could not be found.");
         }
+
+        operation.Complete(("AnnouncementId", announcementId));
     }
 
     private long GetCurrentUserId() => currentUserContext.UserId

@@ -9,7 +9,8 @@ Controllers and URLs are resource-oriented. Roles remain authorization rules rat
 Seed a deterministic, connected development dataset with:
 
 ```bash
-DOTNET_ENVIRONMENT=Development dotnet run --project tools/MockDataSeeder/MockDataSeeder.csproj
+DOTNET_ENVIRONMENT=Development 
+dotnet run --project tools/MockDataSeeder/MockDataSeeder.csproj
 ```
 
 See [development mock-data seeding](docs/MockDataSeeding.md) for prerequisites, generated credentials, safety rules, and dataset details.

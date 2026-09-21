@@ -1,6 +1,7 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.AspNetCore.Identity;
@@ -9,12 +10,16 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class TeacherService(
 	AuthRepository authRepository,
-	IPasswordHasher<UserModel> passwordHasher)
+	IPasswordHasher<UserModel> passwordHasher,
+	ActionLogService actionLogService)
 {
 	public async Task<AuthUserResponse> CreateTeacherAsync(
 		CreateTeacherRequest request,
 		CancellationToken cancellationToken)
 	{
+		using var operation = actionLogService.Begin<TeacherService>(
+			"Service",
+			nameof(CreateTeacherAsync));
 		var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
 		if (await authRepository.EmailExistsAsync(normalizedEmail, cancellationToken))
@@ -40,7 +45,7 @@ public sealed class TeacherService(
 
 		var roleAssignment = account.RoleAssignments.Single();
 
-		return new AuthUserResponse
+		var response = new AuthUserResponse
 		{
 			Id = account.User.Id,
 			Email = account.User.Email,
@@ -53,6 +58,8 @@ public sealed class TeacherService(
 			Role = roleAssignment.RoleCode,
 			RoleUserId = roleAssignment.RoleUserId
 		};
+		operation.Complete(("UserId", response.Id), ("Role", response.Role));
+		return response;
 	}
 
 	private static string? NormalizeOptional(string? value) =>

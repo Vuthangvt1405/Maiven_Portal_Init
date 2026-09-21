@@ -2,6 +2,7 @@
 using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Models.Enums;
 using Maiven_Portal_Managment.Repository;
@@ -10,7 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Services;
 
-public sealed class CourseService(CourseRepository courseRepository)
+public sealed class CourseService(
+    CourseRepository courseRepository,
+    ActionLogService actionLogService)
 {
     private const string DuplicateCodeMessage =
         "A course with the same code already exists.";
@@ -25,6 +28,9 @@ public sealed class CourseService(CourseRepository courseRepository)
         CreateCourseRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseService>(
+            "Service",
+            nameof(CreateAsync));
         var model = BuildModel(
             request.CourseCode,
             request.CourseName,
@@ -47,7 +53,9 @@ public sealed class CourseService(CourseRepository courseRepository)
                 model,
                 cancellationToken);
 
-            return ToResponse(created);
+            var response = ToResponse(created);
+            operation.Complete(("CourseId", response.Id));
+            return response;
         }
         catch (DbUpdateException exception)
         {
@@ -66,6 +74,11 @@ public sealed class CourseService(CourseRepository courseRepository)
         CourseQueryParameters parameters,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseService>(
+            "Service",
+            nameof(GetPagedAsync),
+            ("RequestedPageNumber", parameters.PageNumber),
+            ("RequestedPageSize", parameters.PageSize));
         var pageNumber = parameters.PageNumber < 1
             ? 1
             : parameters.PageNumber;
@@ -87,6 +100,11 @@ public sealed class CourseService(CourseRepository courseRepository)
             .Select(ToResponse)
             .ToArray();
 
+        operation.Complete(
+            ("PageNumber", pageNumber),
+            ("PageSize", pageSize),
+            ("ResultCount", items.Length),
+            ("TotalItems", result.TotalItems));
         return (items, result.TotalItems);
     }
 
@@ -94,6 +112,10 @@ public sealed class CourseService(CourseRepository courseRepository)
         long courseId,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseService>(
+            "Service",
+            nameof(GetByIdAsync),
+            ("CourseId", courseId));
         var course = await courseRepository.GetByIdAsync(
             courseId,
             cancellationToken);
@@ -104,7 +126,9 @@ public sealed class CourseService(CourseRepository courseRepository)
                 "The course could not be found.");
         }
 
-        return ToResponse(course);
+        var response = ToResponse(course);
+        operation.Complete(("CourseId", response.Id));
+        return response;
     }
 
     public async Task<CourseResponse> UpdateAsync(
@@ -112,6 +136,10 @@ public sealed class CourseService(CourseRepository courseRepository)
         UpdateCourseRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseService>(
+            "Service",
+            nameof(UpdateAsync),
+            ("CourseId", courseId));
         var existing = await courseRepository.GetByIdAsync(
             courseId,
             cancellationToken);
@@ -142,7 +170,9 @@ public sealed class CourseService(CourseRepository courseRepository)
                     "The course could not be found.");
             }
 
-            return ToResponse(updated);
+            var response = ToResponse(updated);
+            operation.Complete(("CourseId", response.Id));
+            return response;
         }
         catch (DbUpdateException exception)
         {
@@ -161,6 +191,10 @@ public sealed class CourseService(CourseRepository courseRepository)
         long courseId,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<CourseService>(
+            "Service",
+            nameof(DeleteAsync),
+            ("CourseId", courseId));
         var deleted = await courseRepository.DeleteAsync(
             courseId,
             cancellationToken);
@@ -170,6 +204,8 @@ public sealed class CourseService(CourseRepository courseRepository)
             throw new NotFoundException(
                 "The course could not be found.");
         }
+
+        operation.Complete(("CourseId", courseId));
     }
 
     private static CourseModel BuildModel(

@@ -1,6 +1,7 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Models.Enums;
 using Maiven_Portal_Managment.Repository;
@@ -9,7 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Services;
 
-public sealed class AcademicYearService(AcademicYearRepository academicYearRepository)
+public sealed class AcademicYearService(
+    AcademicYearRepository academicYearRepository,
+    ActionLogService actionLogService)
 {
     private const string DuplicateNameMessage =
         "An academic year with the same name already exists.";
@@ -24,6 +27,9 @@ public sealed class AcademicYearService(AcademicYearRepository academicYearRepos
         CreateAcademicYearRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AcademicYearService>(
+            "Service",
+            nameof(CreateAsync));
         var model = BuildModel(
             request.Name,
             request.StartDate,
@@ -35,7 +41,9 @@ public sealed class AcademicYearService(AcademicYearRepository academicYearRepos
         try
         {
             var created = await academicYearRepository.AddAsync(model, cancellationToken);
-            return ToResponse(created);
+            var response = ToResponse(created);
+            operation.Complete(("AcademicYearId", response.Id));
+            return response;
         }
         catch (DbUpdateException exception)
         {
@@ -52,8 +60,13 @@ public sealed class AcademicYearService(AcademicYearRepository academicYearRepos
     public async Task<IReadOnlyList<AcademicYearResponse>> GetAllAsync(
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AcademicYearService>(
+            "Service",
+            nameof(GetAllAsync));
         var academicYears = await academicYearRepository.GetAllAsync(cancellationToken);
-        return academicYears.Select(ToResponse).ToArray();
+        var response = academicYears.Select(ToResponse).ToArray();
+        operation.Complete(("ResultCount", response.Length));
+        return response;
     }
 
     public async Task<AcademicYearResponse> UpdateAsync(
@@ -61,6 +74,10 @@ public sealed class AcademicYearService(AcademicYearRepository academicYearRepos
         UpdateAcademicYearRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AcademicYearService>(
+            "Service",
+            nameof(UpdateAsync),
+            ("AcademicYearId", academicYearId));
         var proposed = BuildModel(
             request.Name,
             request.StartDate,
@@ -101,7 +118,9 @@ public sealed class AcademicYearService(AcademicYearRepository academicYearRepos
                 throw new NotFoundException("The academic year could not be found.");
             }
 
-            return ToResponse(updated);
+            var response = ToResponse(updated);
+            operation.Complete(("AcademicYearId", response.Id));
+            return response;
         }
         catch (DbUpdateException exception)
         {

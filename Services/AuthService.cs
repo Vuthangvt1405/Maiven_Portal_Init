@@ -2,6 +2,7 @@ using Maiven_Portal_Managment.Dtos;
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.AspNetCore.Identity;
@@ -11,7 +12,8 @@ namespace Maiven_Portal_Managment.Services;
 public sealed class AuthService(
     AuthRepository authRepository,
     IPasswordHasher<UserModel> passwordHasher,
-    JwtTokenService tokenService)
+    JwtTokenService tokenService,
+    ActionLogService actionLogService)
 {
     private const string InvalidCredentialsMessage = "Invalid email or password.";
 
@@ -19,6 +21,9 @@ public sealed class AuthService(
         RegisterRequest request,
         CancellationToken cancellationToken)
     {
+        using var operation = actionLogService.Begin<AuthService>(
+            "Service",
+            nameof(RegisterStudentAsync));
         var normalizedEmail = NormalizeEmail(request.Email);
 
         if (await authRepository.EmailExistsAsync(normalizedEmail, cancellationToken))
@@ -42,18 +47,42 @@ public sealed class AuthService(
             passwordHash,
             cancellationToken);
 
-        return CreateAuthResponse(account, account.RoleAssignments.Single());
+        var response = CreateAuthResponse(account, account.RoleAssignments.Single());
+        operation.Complete(
+            ("UserId", response.User.Id),
+            ("Role", response.User.Role));
+        return response;
     }
 
-    public Task<AuthResponse> LoginAsync(
+    public async Task<AuthResponse> LoginAsync(
         LoginRequest request,
-        CancellationToken cancellationToken) =>
-        AuthenticateAsync(request, isAdminLogin: false, cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        using var operation = actionLogService.Begin<AuthService>(
+            "Service",
+            nameof(LoginAsync),
+            ("LoginType", "User"));
+        var response = await AuthenticateAsync(request, isAdminLogin: false, cancellationToken);
+        operation.Complete(
+            ("UserId", response.User.Id),
+            ("Role", response.User.Role));
+        return response;
+    }
 
-    public Task<AuthResponse> LoginAdminAsync(
+    public async Task<AuthResponse> LoginAdminAsync(
         LoginRequest request,
-        CancellationToken cancellationToken) =>
-        AuthenticateAsync(request, isAdminLogin: true, cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        using var operation = actionLogService.Begin<AuthService>(
+            "Service",
+            nameof(LoginAdminAsync),
+            ("LoginType", "Admin"));
+        var response = await AuthenticateAsync(request, isAdminLogin: true, cancellationToken);
+        operation.Complete(
+            ("UserId", response.User.Id),
+            ("Role", response.User.Role));
+        return response;
+    }
 
     private async Task<AuthResponse> AuthenticateAsync(
         LoginRequest request,

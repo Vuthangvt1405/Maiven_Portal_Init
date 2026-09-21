@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The seeder is a separate nested project. Exclude its entire tree from
+         this web project's SDK default globs to prevent recursive bin/obj copies. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tools/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,10 +19,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="tools/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
