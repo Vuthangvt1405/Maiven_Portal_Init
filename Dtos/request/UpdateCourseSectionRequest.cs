@@ -2,38 +2,33 @@
 using Maiven_Portal_Managment.Data.Entities.Enums;
 
 namespace Maiven_Portal_Managment.Dtos.request;
-
-public sealed record UpdateCourseSectionRequest
+public sealed record UpdateCourseSectionRequest(
+    [Required] long SemesterId,
+    [Required] long TeacherUserRoleId,
+    [Required, MaxLength(50)] string SectionCode,
+    [Required, Range(1, 500)] int Capacity,
+    [Required, EnumDataType(typeof(WeekDay))] WeekDay DayOfWeek,
+    [Required, Range(1, 10), EnumDataType(typeof(ClassPeriod))] ClassPeriod StartPeriod,
+    [Required, Range(1, 10), EnumDataType(typeof(ClassPeriod))] ClassPeriod EndPeriod,
+    [Required] DateOnly StartDate,
+    [Required] DateOnly EndDate,
+    [Required, EnumDataType(typeof(CourseSectionStatus))] CourseSectionStatus Status
+) : IValidatableObject
 {
-    [Required]
-    public long? TeacherUserRoleId { get; set; }
-    [Required]
-    public long? SemesterId { get; set; }
-    [Required]
-    [Range(1, 500)]
-    public int Capacity { get; set; }
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (StartPeriod >= EndPeriod)
+        {
+            yield return new ValidationResult(
+                "Start period must be earlier than end period.",
+                [nameof(StartPeriod), nameof(EndPeriod)] );
+        }
 
-    [Required]
-    [EnumDataType(typeof(WeekDay))]
-    public WeekDay DayOfWeek { get; set; }
-
-    [Required]
-    [Range(1, 10)]
-    [EnumDataType(typeof(ClassPeriod))]
-    public ClassPeriod StartPeriod { get; set; }
-
-    [Required]
-    [Range(1, 10)]
-    [EnumDataType(typeof(ClassPeriod))]
-    public ClassPeriod EndPeriod { get; set; }
-
-    [Required]
-    public DateOnly StartDate { get; set; }
-
-    [Required]
-    public DateOnly EndDate { get; set; }
-
-    [Required]
-    [EnumDataType(typeof(CourseSectionStatus))]
-    public CourseSectionStatus Status { get; set; }
+        if (StartDate >= EndDate)
+        {
+            yield return new ValidationResult(
+                "Start date must be earlier than or equal to end date.",
+                [nameof(StartDate), nameof(EndDate) ]);
+        }
+    }
 }

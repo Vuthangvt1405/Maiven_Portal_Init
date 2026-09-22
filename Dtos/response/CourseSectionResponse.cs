@@ -2,20 +2,19 @@
 
 namespace Maiven_Portal_Managment.Dtos.response;
 
-public sealed record CourseSectionResponse
-{
-    public long Id { get; set; }
-    public long CourseId { get; set; }
-    public long SemesterId { get; set; }
-    public long TeacherUserRoleId { get; set; }
-    public string SectionCode { get; set; } = string.Empty;
-    public int Capacity { get; set; }
-    public WeekDay DayOfWeek { get; set; }
-    public ClassPeriod StartPeriod { get; set; }
-    public ClassPeriod EndPeriod { get; set; }
-    public DateOnly StartDate { get; set; }
-    public DateOnly EndDate { get; set; }
-    public CourseSectionStatus Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
+public sealed record CourseSectionResponse(
+    long Id,
+    long CourseId,
+    long SemesterId,
+    long TeacherUserRoleId,
+    string SectionCode,
+    int Capacity,
+    WeekDay DayOfWeek,
+    ClassPeriod StartPeriod,
+    ClassPeriod EndPeriod,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    CourseSectionStatus Status,
+    DateTime CreatedAt,
+    DateTime UpdatedAt
+);

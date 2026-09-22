@@ -55,6 +55,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<UserRoleRepository>();
 builder.Services.AddScoped<AcademicYearRepository>();
 builder.Services.AddScoped<SemesterRepository>();
 builder.Services.AddScoped<CourseSectionRepository>();

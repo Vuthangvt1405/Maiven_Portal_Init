@@ -1,6 +1,6 @@
 
 namespace Maiven_Portal_Managment.Dtos.response;
-public record CourseSectionDetailResponse(
+public sealed record CourseSectionDetailResponse(
     long Id,
     string? SectionCode,
     long CourseId,
@@ -8,7 +8,7 @@ public record CourseSectionDetailResponse(
     PagedResponse<StudentInCourseSectionResponse>? Students
 );
 
-public record StudentInCourseSectionResponse(
+public sealed record StudentInCourseSectionResponse(
     long EnrollmentId,
     long StudentUserRoleId,
     string FullName,
@@ -16,7 +16,7 @@ public record StudentInCourseSectionResponse(
     IReadOnlyList<StudentScoreDetailResponse> Scores
 );
 
-public record StudentScoreDetailResponse(
+public sealed record StudentScoreDetailResponse(
     long ComponentId,
     string ComponentName,
     decimal Weight,

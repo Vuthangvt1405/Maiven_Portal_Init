@@ -20,7 +20,7 @@ public sealed class TeacherGradeController(CourseResultService courseResultServi
         CurrentUserContext currentTeacher,
         CancellationToken cancellationToken)
     {
-        if (currentTeacher.UserId is not long teacherId)
+        if (currentTeacher.RoleUserId is not long teacherId)
         {
             throw new UnauthorizedException("User ID is not available.");
         }

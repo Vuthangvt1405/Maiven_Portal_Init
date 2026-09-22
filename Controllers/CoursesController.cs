@@ -82,6 +82,6 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
         CancellationToken cancellationToken)
     {
         await courseService.DeleteAsync(courseId, cancellationToken);
-        return NoContent();
+        return Ok("The course has been deleted successfully!");
     }
 }
