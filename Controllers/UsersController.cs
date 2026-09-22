@@ -14,9 +14,9 @@ namespace Maiven_Portal_Managment.Controllers;
 public sealed class UsersController(UserService userService) : ControllerBase
 {
     [HttpGet("me")]
-    public ActionResult<CurrentUserResponse> Me()
+    public async Task<ActionResult<CurrentUserResponse>> Me()
     {
-        var response = userService.GetCurrentUser();
+        var response = await userService.GetCurrentUser();
         return Ok(response);
     }
 

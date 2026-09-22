@@ -16,7 +16,7 @@ public sealed class UserService(
 {
     private static readonly ILog Logger = LogManager.GetLogger(typeof(UserService));
 
-    public CurrentUserResponse GetCurrentUser()
+    public async Task<CurrentUserResponse> GetCurrentUser()
     {
         if (!currentUserContext.IsAuthenticated ||
             currentUserContext.UserId is not long userId ||
@@ -27,12 +27,26 @@ public sealed class UserService(
             throw new UnauthorizedException("An authenticated user is required.");
         }
 
+        var user = await userRepository.GetByIdAsync(userId, CancellationToken.None);
+
+        if (user is null)
+        {
+            throw new NotFoundException("The active user account could not be found.");
+        }
+
+        var userRole = user.UserRoles.FirstOrDefault();
         var response = new CurrentUserResponse
         {
-            Id = userId,
-            Email = currentUserContext.Email,
-            Role = currentUserContext.Role,
-            RoleUserId = roleUserId
+            Id = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+            Role = userRole?.Role.Code ?? currentUserContext.Role,
+            RoleUserId = userRole?.Id ?? roleUserId,
+            DateOfBirth = user.DateOfBirth,
+            Gender = user.Gender,
+            Phone = user.Phone,
+            Address = user.Address,
+            AvatarUrl = user.AvatarUrl
         };
         Logger.Info(
             $"Current user retrieved UserId={response.Id} " +
