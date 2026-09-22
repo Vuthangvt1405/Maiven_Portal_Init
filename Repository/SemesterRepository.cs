@@ -1,13 +1,12 @@
 using Maiven_Portal_Managment.Data;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Mappings;
+using Maiven_Portal_Managment.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Repository;
 
 public sealed class SemesterRepository(AppDbContext dbContext)
 {
-    public async Task<IReadOnlyList<SemesterModel>> GetAllAsync(
+    public async Task<IReadOnlyList<Semester>> GetAllAsync(
         CancellationToken cancellationToken)
     {
         var semesters = await dbContext.Semesters
@@ -16,10 +15,10 @@ public sealed class SemesterRepository(AppDbContext dbContext)
             .ThenByDescending(semester => semester.Id)
             .ToListAsync(cancellationToken);
 
-        return semesters.Select(semester => semester.ToModel()).ToArray();
+        return semesters;
     }
 
-    public async Task<SemesterModel?> GetByIdAsync(
+    public async Task<Semester?> GetByIdAsync(
         long semesterId,
         CancellationToken cancellationToken)
     {
@@ -29,10 +28,10 @@ public sealed class SemesterRepository(AppDbContext dbContext)
                 semester => semester.Id == semesterId,
                 cancellationToken);
 
-        return entity?.ToModel();
+        return entity;
     }
 
-    public async Task<IReadOnlyList<SemesterModel>> GetByAcademicYearIdAsync(
+    public async Task<IReadOnlyList<Semester>> GetByAcademicYearIdAsync(
         long academicYearId,
         CancellationToken cancellationToken)
     {
@@ -41,25 +40,24 @@ public sealed class SemesterRepository(AppDbContext dbContext)
             .Where(semester => semester.AcademicYearId == academicYearId)
             .ToListAsync(cancellationToken);
 
-        return semesters.Select(semester => semester.ToModel()).ToArray();
+        return semesters;
     }
 
-    public async Task<SemesterModel> CreateAsync(
-        SemesterModel model,
+    public async Task<Semester> CreateAsync(
+        Semester entity,
         CancellationToken cancellationToken)
     {
-        var entity = model.ToNewEntity();
         dbContext.Semesters.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
-        return entity.ToModel();
+        return entity;
     }
 
-    public async Task<SemesterModel?> UpdateAsync(
-        SemesterModel model,
+    public async Task<Semester?> UpdateAsync(
+        Semester values,
         CancellationToken cancellationToken)
     {
         var entity = await dbContext.Semesters.SingleOrDefaultAsync(
-            semester => semester.Id == model.Id,
+            semester => semester.Id == values.Id,
             cancellationToken);
 
         if (entity is null)
@@ -67,8 +65,12 @@ public sealed class SemesterRepository(AppDbContext dbContext)
             return null;
         }
 
-        model.ApplyToEntity(entity);
+        entity.AcademicYearId = values.AcademicYearId;
+        entity.Name = values.Name;
+        entity.StartDate = values.StartDate;
+        entity.EndDate = values.EndDate;
+
         await dbContext.SaveChangesAsync(cancellationToken);
-        return entity.ToModel();
+        return entity;
     }
 }

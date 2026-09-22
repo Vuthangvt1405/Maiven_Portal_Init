@@ -1,4 +1,4 @@
-namespace Maiven_Portal_Managment.Models;
+namespace Maiven_Portal_Managment.Common;
 
 public static class SystemRoles
 {

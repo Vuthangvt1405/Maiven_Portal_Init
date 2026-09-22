@@ -1,9 +1,8 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
-using Maiven_Portal_Managment.Logging;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Enums;
+using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -11,8 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Maiven_Portal_Managment.Services;
 
 public sealed class AcademicYearService(
-    AcademicYearRepository academicYearRepository,
-    ActionLogService actionLogService)
+    AcademicYearRepository academicYearRepository)
 {
     private const string DuplicateNameMessage =
         "An academic year with the same name already exists.";
@@ -27,22 +25,18 @@ public sealed class AcademicYearService(
         CreateAcademicYearRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AcademicYearService>(
-            "Service",
-            nameof(CreateAsync));
-        var model = BuildModel(
+        var entity = BuildEntity(
             request.Name,
             request.StartDate,
             request.EndDate,
             request.Status);
 
-        await ValidateConflictsAsync(model, null, cancellationToken);
+        await ValidateConflictsAsync(entity, null, cancellationToken);
 
         try
         {
-            var created = await academicYearRepository.AddAsync(model, cancellationToken);
+            var created = await academicYearRepository.AddAsync(entity, cancellationToken);
             var response = ToResponse(created);
-            operation.Complete(("AcademicYearId", response.Id));
             return response;
         }
         catch (DbUpdateException exception)
@@ -60,12 +54,8 @@ public sealed class AcademicYearService(
     public async Task<IReadOnlyList<AcademicYearResponse>> GetAllAsync(
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AcademicYearService>(
-            "Service",
-            nameof(GetAllAsync));
         var academicYears = await academicYearRepository.GetAllAsync(cancellationToken);
         var response = academicYears.Select(ToResponse).ToArray();
-        operation.Complete(("ResultCount", response.Length));
         return response;
     }
 
@@ -74,11 +64,7 @@ public sealed class AcademicYearService(
         UpdateAcademicYearRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AcademicYearService>(
-            "Service",
-            nameof(UpdateAsync),
-            ("AcademicYearId", academicYearId));
-        var proposed = BuildModel(
+        var proposed = BuildEntity(
             request.Name,
             request.StartDate,
             request.EndDate,
@@ -119,7 +105,6 @@ public sealed class AcademicYearService(
             }
 
             var response = ToResponse(updated);
-            operation.Complete(("AcademicYearId", response.Id));
             return response;
         }
         catch (DbUpdateException exception)
@@ -135,7 +120,7 @@ public sealed class AcademicYearService(
     }
 
     private async Task ValidateConflictsAsync(
-        AcademicYearModel proposed,
+        AcademicYear proposed,
         long? excludedAcademicYearId,
         CancellationToken cancellationToken)
     {
@@ -167,7 +152,7 @@ public sealed class AcademicYearService(
         }
     }
 
-    private static AcademicYearModel BuildModel(
+    private static AcademicYear BuildEntity(
         string? name,
         DateOnly? startDate,
         DateOnly? endDate,
@@ -198,7 +183,7 @@ public sealed class AcademicYearService(
                 "Academic-year status must be ACTIVE or COMPLETED.");
         }
 
-        return new AcademicYearModel
+        return new AcademicYear
         {
             Name = normalizedName,
             StartDate = startDate.Value,
@@ -235,15 +220,15 @@ public sealed class AcademicYearService(
             exception);
     }
 
-    private static AcademicYearResponse ToResponse(AcademicYearModel model) => new()
+    private static AcademicYearResponse ToResponse(AcademicYear entity) => new()
     {
-        Id = model.Id,
-        Name = model.Name,
-        StartDate = model.StartDate,
-        EndDate = model.EndDate,
-        Status = model.Status,
-        CreatedAt = AsUtc(model.CreatedAt),
-        UpdatedAt = AsUtc(model.UpdatedAt)
+        Id = entity.Id,
+        Name = entity.Name,
+        StartDate = entity.StartDate,
+        EndDate = entity.EndDate,
+        Status = entity.Status,
+        CreatedAt = AsUtc(entity.CreatedAt),
+        UpdatedAt = AsUtc(entity.UpdatedAt)
     };
 
     private static DateTime AsUtc(DateTime value) => value.Kind switch

@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Maiven_Portal_Managment.Models.Enums;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 
 namespace Maiven_Portal_Managment.Dtos.request;
 

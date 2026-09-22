@@ -2,9 +2,8 @@
 using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Exceptions;
-using Maiven_Portal_Managment.Logging;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Enums;
+using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -12,8 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Maiven_Portal_Managment.Services;
 
 public sealed class CourseService(
-    CourseRepository courseRepository,
-    ActionLogService actionLogService)
+    CourseRepository courseRepository)
 {
     private const string DuplicateCodeMessage =
         "A course with the same code already exists.";
@@ -28,10 +26,7 @@ public sealed class CourseService(
         CreateCourseRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseService>(
-            "Service",
-            nameof(CreateAsync));
-        var model = BuildModel(
+        var entity = BuildEntity(
             request.CourseCode,
             request.CourseName,
             request.Credits,
@@ -39,7 +34,7 @@ public sealed class CourseService(
             request.Status);
 
         var existingCourse = await courseRepository.GetByCourseCodeAsync(
-            model.CourseCode,
+            entity.CourseCode,
             cancellationToken);
 
         if (existingCourse is not null)
@@ -50,11 +45,10 @@ public sealed class CourseService(
         try
         {
             var created = await courseRepository.AddAsync(
-                model,
+                entity,
                 cancellationToken);
 
             var response = ToResponse(created);
-            operation.Complete(("CourseId", response.Id));
             return response;
         }
         catch (DbUpdateException exception)
@@ -74,11 +68,6 @@ public sealed class CourseService(
         CourseQueryParameters parameters,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseService>(
-            "Service",
-            nameof(GetPagedAsync),
-            ("RequestedPageNumber", parameters.PageNumber),
-            ("RequestedPageSize", parameters.PageSize));
         var pageNumber = parameters.PageNumber < 1
             ? 1
             : parameters.PageNumber;
@@ -100,11 +89,6 @@ public sealed class CourseService(
             .Select(ToResponse)
             .ToArray();
 
-        operation.Complete(
-            ("PageNumber", pageNumber),
-            ("PageSize", pageSize),
-            ("ResultCount", items.Length),
-            ("TotalItems", result.TotalItems));
         return (items, result.TotalItems);
     }
 
@@ -112,10 +96,6 @@ public sealed class CourseService(
         long courseId,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseService>(
-            "Service",
-            nameof(GetByIdAsync),
-            ("CourseId", courseId));
         var course = await courseRepository.GetByIdAsync(
             courseId,
             cancellationToken);
@@ -127,7 +107,6 @@ public sealed class CourseService(
         }
 
         var response = ToResponse(course);
-        operation.Complete(("CourseId", response.Id));
         return response;
     }
 
@@ -136,10 +115,6 @@ public sealed class CourseService(
         UpdateCourseRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseService>(
-            "Service",
-            nameof(UpdateAsync),
-            ("CourseId", courseId));
         var existing = await courseRepository.GetByIdAsync(
             courseId,
             cancellationToken);
@@ -171,7 +146,6 @@ public sealed class CourseService(
             }
 
             var response = ToResponse(updated);
-            operation.Complete(("CourseId", response.Id));
             return response;
         }
         catch (DbUpdateException exception)
@@ -191,10 +165,6 @@ public sealed class CourseService(
         long courseId,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseService>(
-            "Service",
-            nameof(DeleteAsync),
-            ("CourseId", courseId));
         var deleted = await courseRepository.DeleteAsync(
             courseId,
             cancellationToken);
@@ -204,11 +174,9 @@ public sealed class CourseService(
             throw new NotFoundException(
                 "The course could not be found.");
         }
-
-        operation.Complete(("CourseId", courseId));
     }
 
-    private static CourseModel BuildModel(
+    private static Course BuildEntity(
         string? courseCode,
         string? courseName,
         int? credits,
@@ -254,7 +222,7 @@ public sealed class CourseService(
                 InvalidStatusMessage);
         }
 
-        return new CourseModel
+        return new Course
         {
             CourseCode = normalizedCourseCode,
             CourseName = normalizedCourseName,
@@ -324,16 +292,16 @@ public sealed class CourseService(
     }
 
     private static CourseResponse ToResponse(
-        CourseModel model) => new()
+        Course entity) => new()
         {
-            Id = model.Id,
-            CourseCode = model.CourseCode,
-            CourseName = model.CourseName,
-            Credits = model.Credits,
-            Description = model.Description,
-            Status = model.Status,
-            CreatedAt = AsUtc(model.CreatedAt),
-            UpdatedAt = AsUtc(model.UpdatedAt)
+            Id = entity.Id,
+            CourseCode = entity.CourseCode,
+            CourseName = entity.CourseName,
+            Credits = entity.Credits,
+            Description = entity.Description,
+            Status = entity.Status,
+            CreatedAt = AsUtc(entity.CreatedAt),
+            UpdatedAt = AsUtc(entity.UpdatedAt)
         };
 
     private static DateTime AsUtc(DateTime value) => value.Kind switch

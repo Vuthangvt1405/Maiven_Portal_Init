@@ -1,16 +1,20 @@
 using Maiven_Portal_Managment.Data;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Mappings;
+using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
-using EntityGender = Maiven_Portal_Managment.Data.Entities.Enums.Gender;
 
 namespace Maiven_Portal_Managment.Repository;
 
 public sealed class UserRepository(AppDbContext dbContext)
 {
-    public async Task<UserModel?> UpdateProfileAsync(
+    public async Task<User?> UpdateProfileAsync(
         long userId,
-        UserModel profile,
+        string fullName,
+        DateOnly? dateOfBirth,
+        Gender? gender,
+        string? phone,
+        string? address,
+        string? avatarUrl,
         CancellationToken cancellationToken)
     {
         var user = await dbContext.Users
@@ -23,21 +27,20 @@ public sealed class UserRepository(AppDbContext dbContext)
             return null;
         }
 
-    
-
-        user.FullName = profile.FullName;
-        user.DateOfBirth = profile.DateOfBirth;
-        user.Gender = profile.Gender is not null ? (EntityGender)profile.Gender.Value : null;
-        user.Phone = profile.Phone;
-        user.Address = profile.Address;
-        user.AvatarUrl = profile.AvatarUrl;
+        user.FullName = fullName;
+        user.DateOfBirth = dateOfBirth;
+        user.Gender = gender;
+        user.Phone = phone;
+        user.Address = address;
+        user.AvatarUrl = avatarUrl;
         user.UpdatedAt = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return ToModelWithRole(user);
+        return user;
     }
-    public async Task<IReadOnlyList<UserModel>> GetAllAsync(
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(
         CancellationToken cancellationToken)
     {
         var users = await dbContext.Users
@@ -47,10 +50,10 @@ public sealed class UserRepository(AppDbContext dbContext)
             .OrderBy(user => user.Id)
             .ToListAsync(cancellationToken);
 
-        return users.Select(ToModelWithRole).ToArray();
+        return users;
     }
 
-    public async Task<UserModel?> GetByIdAsync(
+    public async Task<User?> GetByIdAsync(
         long userId,
         CancellationToken cancellationToken)
     {
@@ -60,7 +63,7 @@ public sealed class UserRepository(AppDbContext dbContext)
                 .ThenInclude(userRole => userRole.Role)
             .SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
-        return user is null ? null : ToModelWithRole(user);
+        return user;
     }
 
     public async Task DeleteByIdAsync(
@@ -74,15 +77,5 @@ public sealed class UserRepository(AppDbContext dbContext)
                     .SetProperty(user => user.IsDeleted, true)
                     .SetProperty(user => user.UpdatedAt, DateTime.UtcNow),
                 cancellationToken);
-    }
-
-    private static UserModel ToModelWithRole(Data.Entities.User user)
-    {
-        var model = user.ToModel();
-        var userRole = user.UserRoles.FirstOrDefault();
-
-        model.Role = userRole?.Role.Code ?? string.Empty;
-        model.RoleUserId = userRole?.Id ?? 0;
-        return model;
     }
 }

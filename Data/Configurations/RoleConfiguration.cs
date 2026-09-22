@@ -1,5 +1,5 @@
+using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Data.Entities;
-using Maiven_Portal_Managment.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

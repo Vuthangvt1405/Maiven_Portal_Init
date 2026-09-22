@@ -1,13 +1,12 @@
 ﻿using Maiven_Portal_Managment.Data;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Mappings;
+using Maiven_Portal_Managment.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Repository
 {
     public sealed class CourseRepository(AppDbContext dbContext)
     {
-        public async Task<CourseModel?> GetByIdAsync(
+        public async Task<Course?> GetByIdAsync(
             long courseId,
             CancellationToken cancellationToken)
         {
@@ -18,10 +17,10 @@ namespace Maiven_Portal_Managment.Repository
                               !course.IsDeleted,
                     cancellationToken);
 
-            return entity?.ToModel();
+            return entity;
         }
 
-        public async Task<CourseModel?> GetByCourseCodeAsync(
+        public async Task<Course?> GetByCourseCodeAsync(
             string courseCode,
             CancellationToken cancellationToken)
         {
@@ -32,10 +31,10 @@ namespace Maiven_Portal_Managment.Repository
                               !course.IsDeleted,
                     cancellationToken);
 
-            return entity?.ToModel();
+            return entity;
         }
 
-        public async Task<(IReadOnlyList<CourseModel> Items, int TotalItems)> GetPagedAsync(
+        public async Task<(IReadOnlyList<Course> Items, int TotalItems)> GetPagedAsync(
             string? courseCode,
             string? courseName,
             int? credits,
@@ -80,33 +79,27 @@ namespace Maiven_Portal_Managment.Repository
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
 
-            var items = entities
-                .Select(course => course.ToModel())
-                .ToArray();
-
-            return (items, totalItems);
+            return (entities, totalItems);
         }
 
-        public async Task<CourseModel> AddAsync(
-            CourseModel model,
+        public async Task<Course> AddAsync(
+            Course entity,
             CancellationToken cancellationToken)
         {
-            var entity = model.ToNewEntity();
-
             dbContext.Courses.Add(entity);
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            return entity.ToModel();
+            return entity;
         }
 
-        public async Task<CourseModel?> UpdateAsync(
-            CourseModel model,
+        public async Task<Course?> UpdateAsync(
+            Course values,
             CancellationToken cancellationToken)
         {
             var entity = await dbContext.Courses
                 .SingleOrDefaultAsync(
-                    course => course.Id == model.Id &&
+                    course => course.Id == values.Id &&
                               !course.IsDeleted,
                     cancellationToken);
 
@@ -115,11 +108,14 @@ namespace Maiven_Portal_Managment.Repository
                 return null;
             }
 
-            model.ApplyToEntity(entity);
+            entity.CourseName = values.CourseName;
+            entity.Credits = values.Credits;
+            entity.Description = values.Description;
+            entity.Status = values.Status;
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            return entity.ToModel();
+            return entity;
         }
 
         public async Task<bool> DeleteAsync(

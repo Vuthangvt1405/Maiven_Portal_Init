@@ -1,8 +1,7 @@
-﻿using Maiven_Portal_Managment.Dtos.request;
-
-using Maiven_Portal_Managment.Dtos.response;
+﻿using Maiven_Portal_Managment.Common;
+using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.Response;
-using Maiven_Portal_Managment.Models;
+using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Services;
 using Maiven_Portal_Managment.Services.Security;
 using Microsoft.AspNetCore.Authorization;

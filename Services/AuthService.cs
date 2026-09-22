@@ -1,9 +1,11 @@
+using log4net;
+using Maiven_Portal_Managment.Common;
+using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos;
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Logging;
-using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.AspNetCore.Identity;
 
@@ -11,19 +13,16 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class AuthService(
     AuthRepository authRepository,
-    IPasswordHasher<UserModel> passwordHasher,
-    JwtTokenService tokenService,
-    ActionLogService actionLogService)
+    IPasswordHasher<User> passwordHasher,
+    JwtTokenService tokenService)
 {
+    private static readonly ILog Logger = LogManager.GetLogger(typeof(AuthService));
     private const string InvalidCredentialsMessage = "Invalid email or password.";
 
     public async Task<AuthResponse> RegisterStudentAsync(
         RegisterRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AuthService>(
-            "Service",
-            nameof(RegisterStudentAsync));
         var normalizedEmail = NormalizeEmail(request.Email);
 
         if (await authRepository.EmailExistsAsync(normalizedEmail, cancellationToken))
@@ -31,7 +30,7 @@ public sealed class AuthService(
             throw new ConflictException("An account with this email already exists.");
         }
 
-        var user = new UserModel
+        var user = new User
         {
             Email = normalizedEmail,
             FullName = request.FullName.Trim(),
@@ -48,9 +47,7 @@ public sealed class AuthService(
             cancellationToken);
 
         var response = CreateAuthResponse(account, account.RoleAssignments.Single());
-        operation.Complete(
-            ("UserId", response.User.Id),
-            ("Role", response.User.Role));
+        Logger.Info($"Student registered UserId={response.User.Id} Email={LogFormat.FormatValue(response.User.Email)} Role={LogFormat.FormatValue(response.User.Role)}");
         return response;
     }
 
@@ -58,14 +55,7 @@ public sealed class AuthService(
         LoginRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AuthService>(
-            "Service",
-            nameof(LoginAsync),
-            ("LoginType", "User"));
         var response = await AuthenticateAsync(request, isAdminLogin: false, cancellationToken);
-        operation.Complete(
-            ("UserId", response.User.Id),
-            ("Role", response.User.Role));
         return response;
     }
 
@@ -73,14 +63,7 @@ public sealed class AuthService(
         LoginRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AuthService>(
-            "Service",
-            nameof(LoginAdminAsync),
-            ("LoginType", "Admin"));
         var response = await AuthenticateAsync(request, isAdminLogin: true, cancellationToken);
-        operation.Complete(
-            ("UserId", response.User.Id),
-            ("Role", response.User.Role));
         return response;
     }
 
@@ -122,6 +105,7 @@ public sealed class AuthService(
                 account.User.Id,
                 upgradedHash,
                 cancellationToken);
+            Logger.Info($"Password hash upgraded UserId={account.User.Id}");
         }
 
         return CreateAuthResponse(account, roleAssignment);

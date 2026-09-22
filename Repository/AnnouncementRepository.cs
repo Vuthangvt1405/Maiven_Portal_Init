@@ -1,21 +1,20 @@
 using Maiven_Portal_Managment.Data;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Mappings;
+using Maiven_Portal_Managment.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Repository;
 
 public sealed class AnnouncementRepository(AppDbContext dbContext)
 {
-    public async Task<AnnouncementModel?> GetByIdAsync(long announcementId, CancellationToken cancellationToken)
+    public async Task<Announcement?> GetByIdAsync(long announcementId, CancellationToken cancellationToken)
     {
         var entity = await dbContext.Announcements
             .AsNoTracking()
             .SingleOrDefaultAsync(announcement => announcement.Id == announcementId, cancellationToken);
-        return entity?.ToModel();
+        return entity;
     }
 
-    public async Task<(IReadOnlyList<AnnouncementModel> Items, int TotalItems)> GetPagedAsync(
+    public async Task<(IReadOnlyList<Announcement> Items, int TotalItems)> GetPagedAsync(
         long? sectionId,
         string? title,
         int pageNumber,
@@ -42,30 +41,32 @@ public sealed class AnnouncementRepository(AppDbContext dbContext)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return (entities.Select(announcement => announcement.ToModel()).ToArray(), totalItems);
+        return (entities, totalItems);
     }
 
-    public async Task<AnnouncementModel> AddAsync(AnnouncementModel model, CancellationToken cancellationToken)
+    public async Task<Announcement> AddAsync(Announcement entity, CancellationToken cancellationToken)
     {
-        var entity = model.ToNewEntity();
         dbContext.Announcements.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
-        return entity.ToModel();
+        return entity;
     }
 
-    public async Task<AnnouncementModel?> UpdateAsync(AnnouncementModel model, CancellationToken cancellationToken)
+    public async Task<Announcement?> UpdateAsync(Announcement values, CancellationToken cancellationToken)
     {
         var entity = await dbContext.Announcements
-            .SingleOrDefaultAsync(announcement => announcement.Id == model.Id, cancellationToken);
+            .SingleOrDefaultAsync(announcement => announcement.Id == values.Id, cancellationToken);
 
         if (entity is null)
         {
             return null;
         }
 
-        model.ApplyToEntity(entity);
+        entity.SectionId = values.SectionId;
+        entity.Title = values.Title;
+        entity.Content = values.Content;
+
         await dbContext.SaveChangesAsync(cancellationToken);
-        return entity.ToModel();
+        return entity;
     }
 
     public async Task<bool> DeleteAsync(long announcementId, CancellationToken cancellationToken)

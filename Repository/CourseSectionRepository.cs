@@ -1,19 +1,15 @@
 ﻿using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
-
+using Maiven_Portal_Managment.Data.Entities.Enums;
 using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
-
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Enums;
-using Maiven_Portal_Managment.Models.Mappings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Repository;
 
 public sealed class CourseSectionRepository(AppDbContext dbContext)
 {
-    public async Task<CourseSectionModel?> GetByIdAsync(
+    public async Task<CourseSection?> GetByIdAsync(
         long sectionId,
         CancellationToken cancellationToken)
     {
@@ -23,10 +19,10 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
                 s => s.Id == sectionId && !s.IsDeleted,
                 cancellationToken);
 
-        return entity?.ToModel();
+        return entity;
     }
 
-    public async Task<CourseSectionModel?> GetBySemesterAndCodeAsync(
+    public async Task<CourseSection?> GetBySemesterAndCodeAsync(
         long semesterId,
         string sectionCode,
         CancellationToken cancellationToken)
@@ -39,10 +35,10 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
                      !s.IsDeleted,
                 cancellationToken);
 
-        return entity?.ToModel();
+        return entity;
     }
 
-    public async Task<(IReadOnlyList<CourseSectionModel> Items, int TotalItems)> GetPagedAsync(
+    public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedAsync(
         long? courseId,
         long? semesterId,
         long? teacherUserRoleId,
@@ -79,12 +75,12 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
 
         if (dayOfWeek.HasValue)
         {
-            query = query.Where(s => (int)s.DayOfWeek == (int)dayOfWeek.Value);
+            query = query.Where(s => s.DayOfWeek == dayOfWeek.Value);
         }
 
         if (status.HasValue)
         {
-            query = query.Where(s => (int)s.Status == (int)status.Value);
+            query = query.Where(s => s.Status == status.Value);
         }
 
         var totalItems = await query.CountAsync(cancellationToken);
@@ -95,14 +91,10 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        var items = entities
-            .Select(s => s.ToModel())
-            .ToArray();
-
-        return (items, totalItems);
+        return (entities, totalItems);
     }
 
-    public async Task<(IReadOnlyList<CourseSectionModel> Items, int TotalItems)> GetPagedForTeacherAsync(
+    public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedForTeacherAsync(
     long teacherUserRoleId,
     CourseSectionQueryParameters parameters,
     int pageNumber,
@@ -116,7 +108,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         return await ApplyFiltersAndPagingAsync(query, parameters, pageNumber, pageSize, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<CourseSectionModel> Items, int TotalItems)> GetPagedForStudentAsync(
+    public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedForStudentAsync(
         long studentUserRoleId,
         CourseSectionQueryParameters parameters,
         int pageNumber,
@@ -132,7 +124,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         return await ApplyFiltersAndPagingAsync(query, parameters, pageNumber, pageSize, cancellationToken);
     }
 
-    private static async Task<(IReadOnlyList<CourseSectionModel> Items, int TotalItems)> ApplyFiltersAndPagingAsync(
+    private static async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> ApplyFiltersAndPagingAsync(
         IQueryable<CourseSection> query,
         CourseSectionQueryParameters parameters,
         int pageNumber,
@@ -156,12 +148,12 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
 
         if (parameters.DayOfWeek.HasValue)
         {
-            query = query.Where(s => (int)s.DayOfWeek == (int)parameters.DayOfWeek.Value);
+            query = query.Where(s => s.DayOfWeek == parameters.DayOfWeek.Value);
         }
 
         if (parameters.Status.HasValue)
         {
-            query = query.Where(s => (int)s.Status == (int)parameters.Status.Value);
+            query = query.Where(s => s.Status == parameters.Status.Value);
         }
 
         var totalItems = await query.CountAsync(cancellationToken);
@@ -172,16 +164,13 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        var items = entities.Select(s => s.ToModel()).ToArray();
-
-        return (items, totalItems);
+        return (entities, totalItems);
     }
 
-    public async Task<CourseSectionModel> AddAsync(
-        CourseSectionModel model,
+    public async Task<CourseSection> AddAsync(
+        CourseSection entity,
         CancellationToken cancellationToken)
     {
-        var entity = model.ToNewEntity();
         var defaultComponents = Enum.GetValues<DefaultGradeComponent>()
         .Select(type => new GradeComponent
         {
@@ -189,7 +178,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
             Weight = 0m
         })
         .ToList();
-        
+
         foreach (var component in defaultComponents)
         {
             entity.GradeComponents.Add(component);
@@ -198,16 +187,16 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         dbContext.CourseSections.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return entity.ToModel();
+        return entity;
     }
 
-    public async Task<CourseSectionModel?> UpdateAsync(
-        CourseSectionModel model,
+    public async Task<CourseSection?> UpdateAsync(
+        CourseSection values,
         CancellationToken cancellationToken)
     {
         var entity = await dbContext.CourseSections
             .SingleOrDefaultAsync(
-                s => s.Id == model.Id && !s.IsDeleted,
+                s => s.Id == values.Id && !s.IsDeleted,
                 cancellationToken);
 
         if (entity is null)
@@ -215,13 +204,21 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
             return null;
         }
 
-        model.ApplyToEntity(entity);
+        entity.TeacherUserRoleId = values.TeacherUserRoleId;
+        entity.Capacity = values.Capacity;
+        entity.DayOfWeek = values.DayOfWeek;
+        entity.StartTime = values.StartTime;
+        entity.EndTime = values.EndTime;
+        entity.StartDate = values.StartDate;
+        entity.EndDate = values.EndDate;
+        entity.Status = values.Status;
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return entity.ToModel();
+        return entity;
     }
 
-    public async Task<(CourseSectionModel? Section, IReadOnlyList<StudentInCourseSectionResponse> Students, int TotalItems)> GetCourseSectionDetailsWithStudentsAsync(
+    public async Task<(CourseSection? Section, IReadOnlyList<StudentInCourseSectionResponse> Students, int TotalItems)> GetCourseSectionDetailsWithStudentsAsync(
         long teacherUserRoleId,
         long sectionId,
         int pageNumber,
@@ -265,7 +262,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
             ))
             .ToListAsync(cancellationToken);
 
-        return (sectionEntity.ToModel(), students, totalItems);
+        return (sectionEntity, students, totalItems);
     }
 
 }

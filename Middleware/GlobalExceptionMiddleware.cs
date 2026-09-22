@@ -75,9 +75,9 @@ public sealed class GlobalExceptionMiddleware
         CurrentUserContext currentUserContext)
     {
         var metadata =
-            $"Method={ActionLogService.FormatValue(context.Request.Method)}, " +
-            $"Path={ActionLogService.FormatValue(context.Request.Path.Value ?? string.Empty)}, " +
-            $"TraceId={ActionLogService.FormatValue(context.TraceIdentifier)}";
+            $"Method={LogFormat.FormatValue(context.Request.Method)}, " +
+            $"Path={LogFormat.FormatValue(context.Request.Path.Value ?? string.Empty)}, " +
+            $"TraceId={LogFormat.FormatValue(context.TraceIdentifier)}";
 
         if (currentUserContext.UserId is long userId)
         {
@@ -86,7 +86,7 @@ public sealed class GlobalExceptionMiddleware
 
         if (!string.IsNullOrWhiteSpace(currentUserContext.Role))
         {
-            metadata += $", ActorRole={ActionLogService.FormatValue(currentUserContext.Role)}";
+            metadata += $", ActorRole={LogFormat.FormatValue(currentUserContext.Role)}";
         }
 
         return metadata;

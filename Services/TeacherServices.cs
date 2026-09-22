@@ -1,8 +1,9 @@
+using log4net;
+using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Logging;
-using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.AspNetCore.Identity;
 
@@ -10,16 +11,14 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class TeacherService(
 	AuthRepository authRepository,
-	IPasswordHasher<UserModel> passwordHasher,
-	ActionLogService actionLogService)
+	IPasswordHasher<User> passwordHasher)
 {
+	private static readonly ILog Logger = LogManager.GetLogger(typeof(TeacherService));
+
 	public async Task<AuthUserResponse> CreateTeacherAsync(
 		CreateTeacherRequest request,
 		CancellationToken cancellationToken)
 	{
-		using var operation = actionLogService.Begin<TeacherService>(
-			"Service",
-			nameof(CreateTeacherAsync));
 		var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
 		if (await authRepository.EmailExistsAsync(normalizedEmail, cancellationToken))
@@ -27,7 +26,7 @@ public sealed class TeacherService(
 			throw new ConflictException("An account with this email already exists.");
 		}
 
-		var user = new UserModel
+		var user = new User
 		{
 			Email = normalizedEmail,
 			FullName = request.FullName.Trim(),
@@ -58,7 +57,7 @@ public sealed class TeacherService(
 			Role = roleAssignment.RoleCode,
 			RoleUserId = roleAssignment.RoleUserId
 		};
-		operation.Complete(("UserId", response.Id), ("Role", response.Role));
+		Logger.Info($"Teacher created UserId={response.Id} Email={LogFormat.FormatValue(response.Email)}");
 		return response;
 	}
 

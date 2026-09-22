@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Reflection;
-namespace Maiven_Portal_Managment.Models.Enums;
+
+namespace Maiven_Portal_Managment.Data.Entities.Enums;
+
 public enum DefaultGradeComponent
 {
     [Description("Attendance")]
@@ -15,6 +17,7 @@ public enum DefaultGradeComponent
     [Description("Final")]
     FinalExam = 4
 }
+
 public static class DefaultGradeComponentExtensions
 {
     public static string GetDescription(this Enum value)
@@ -23,16 +26,4 @@ public static class DefaultGradeComponentExtensions
         var attribute = field?.GetCustomAttribute<DescriptionAttribute>();
         return attribute?.Description ?? value.ToString();
     }
-
-    public static IReadOnlyList<GradeComponentModel> CreateDefaultComponents()
-    {
-        return Enum.GetValues<DefaultGradeComponent>()
-            .Select(type => new GradeComponentModel
-            {
-                SectionId = 0,
-                Name = type.GetDescription(),
-                Weight = 0m
-            })
-            .ToList();
-    }
-}   
+}

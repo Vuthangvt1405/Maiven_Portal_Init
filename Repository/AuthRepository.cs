@@ -1,9 +1,8 @@
+using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos;
 using Maiven_Portal_Managment.Exceptions;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Mappings;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,14 +44,14 @@ public sealed class AuthRepository(AppDbContext dbContext)
 
         return new AuthAccount
         {
-            User = result.User.ToModel(),
+            User = result.User,
             PasswordHash = result.User.PasswordHash,
             RoleAssignments = result.RoleAssignments
         };
     }
 
     public async Task<AuthAccount> CreateStudentAsync(
-        UserModel user,
+        User user,
         string passwordHash,
         CancellationToken cancellationToken)
     {
@@ -63,14 +62,13 @@ public sealed class AuthRepository(AppDbContext dbContext)
             ?? throw new InvalidOperationException(
                 $"The required {SystemRoles.Student.Code} role is not configured.");
 
-        var entity = user.ToNewEntity(passwordHash);
-        var userRole = new UserRole
+        user.PasswordHash = passwordHash;
+        user.UserRoles.Add(new UserRole
         {
             RoleId = studentRole.Id
-        };
-        entity.UserRoles.Add(userRole);
+        });
 
-        dbContext.Users.Add(entity);
+        dbContext.Users.Add(user);
 
         try
         {
@@ -81,10 +79,12 @@ public sealed class AuthRepository(AppDbContext dbContext)
             throw new ConflictException("An account with this email already exists.", exception);
         }
 
+        var userRole = user.UserRoles.Single();
+
         return new AuthAccount
         {
-            User = entity.ToModel(),
-            PasswordHash = entity.PasswordHash,
+            User = user,
+            PasswordHash = user.PasswordHash,
             RoleAssignments =
             [
                 new AuthRoleAssignment
@@ -97,7 +97,7 @@ public sealed class AuthRepository(AppDbContext dbContext)
     }
 
     public async Task<AuthAccount> CreateTeacherAsync(
-        UserModel user,
+        User user,
         string passwordHash,
         CancellationToken cancellationToken)
     {
@@ -108,14 +108,13 @@ public sealed class AuthRepository(AppDbContext dbContext)
             ?? throw new InvalidOperationException(
                 $"The required {SystemRoles.Teacher.Code} role is not configured.");
 
-        var entity = user.ToNewEntity(passwordHash);
-        var userRole = new UserRole
+        user.PasswordHash = passwordHash;
+        user.UserRoles.Add(new UserRole
         {
             RoleId = teacherRole.Id
-        };
-        entity.UserRoles.Add(userRole);
+        });
 
-        dbContext.Users.Add(entity);
+        dbContext.Users.Add(user);
 
         try
         {
@@ -126,10 +125,12 @@ public sealed class AuthRepository(AppDbContext dbContext)
             throw new ConflictException("An account with this email already exists.", exception);
         }
 
+        var userRole = user.UserRoles.Single();
+
         return new AuthAccount
         {
-            User = entity.ToModel(),
-            PasswordHash = entity.PasswordHash,
+            User = user,
+            PasswordHash = user.PasswordHash,
             RoleAssignments =
             [
                 new AuthRoleAssignment

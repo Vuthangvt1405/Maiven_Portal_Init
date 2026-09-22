@@ -1,17 +1,15 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
-using Maiven_Portal_Managment.Logging;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Enums;
+using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 using Maiven_Portal_Managment.Repository;
 
 namespace Maiven_Portal_Managment.Services;
 
 public sealed class SemesterService(
     SemesterRepository semesterRepository,
-    AcademicYearRepository academicYearRepository,
-    ActionLogService actionLogService)
+    AcademicYearRepository academicYearRepository)
 {
     private const string AcademicYearNotFoundMessage =
         "The academic year could not be found.";
@@ -28,36 +26,25 @@ public sealed class SemesterService(
         CreateSemesterRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<SemesterService>(
-            "Service",
-            nameof(CreateAsync),
-            ("AcademicYearId", request.AcademicYearId));
-        var model = BuildModel(
+        var entity = BuildEntity(
             request.AcademicYearId,
             request.Name,
             request.StartDate,
             request.EndDate);
 
-        await ValidateAcademicYearAsync(model, cancellationToken);
-        await ValidateConflictsAsync(model, null, cancellationToken);
+        await ValidateAcademicYearAsync(entity, cancellationToken);
+        await ValidateConflictsAsync(entity, null, cancellationToken);
 
-        var created = await semesterRepository.CreateAsync(model, cancellationToken);
+        var created = await semesterRepository.CreateAsync(entity, cancellationToken);
         var response = ToResponse(created);
-        operation.Complete(
-            ("SemesterId", response.Id),
-            ("AcademicYearId", response.AcademicYearId));
         return response;
     }
 
     public async Task<IReadOnlyList<SemesterResponse>> GetAllAsync(
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<SemesterService>(
-            "Service",
-            nameof(GetAllAsync));
         var semesters = await semesterRepository.GetAllAsync(cancellationToken);
         var response = semesters.Select(ToResponse).ToArray();
-        operation.Complete(("ResultCount", response.Length));
         return response;
     }
 
@@ -66,10 +53,6 @@ public sealed class SemesterService(
         UpdateSemesterRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<SemesterService>(
-            "Service",
-            nameof(UpdateAsync),
-            ("SemesterId", semesterId));
         if (semesterId <= 0)
         {
             throw new BadRequestException(
@@ -97,7 +80,7 @@ public sealed class SemesterService(
             throw new ConflictException(InactiveAcademicYearMessage);
         }
 
-        var proposed = BuildModel(
+        var proposed = BuildEntity(
             request.AcademicYearId,
             request.Name,
             request.StartDate,
@@ -114,18 +97,15 @@ public sealed class SemesterService(
         }
 
         var response = ToResponse(updated);
-        operation.Complete(
-            ("SemesterId", response.Id),
-            ("AcademicYearId", response.AcademicYearId));
         return response;
     }
 
     private async Task ValidateAcademicYearAsync(
-        SemesterModel model,
+        Semester entity,
         CancellationToken cancellationToken)
     {
         var academicYear = await academicYearRepository.GetByIdAsync(
-            model.AcademicYearId,
+            entity.AcademicYearId,
             cancellationToken);
         if (academicYear is null)
         {
@@ -137,15 +117,15 @@ public sealed class SemesterService(
             throw new ConflictException(InactiveAcademicYearMessage);
         }
 
-        if (model.StartDate < academicYear.StartDate ||
-            model.EndDate > academicYear.EndDate)
+        if (entity.StartDate < academicYear.StartDate ||
+            entity.EndDate > academicYear.EndDate)
         {
             throw new ConflictException(OutsideAcademicYearMessage);
         }
     }
 
     private async Task ValidateConflictsAsync(
-        SemesterModel proposed,
+        Semester proposed,
         long? excludedSemesterId,
         CancellationToken cancellationToken)
     {
@@ -172,7 +152,7 @@ public sealed class SemesterService(
         }
     }
 
-    private static SemesterModel BuildModel(
+    private static Semester BuildEntity(
         long academicYearId,
         string? name,
         DateOnly? startDate,
@@ -203,7 +183,7 @@ public sealed class SemesterService(
                 "Semester startDate must be on or before endDate.");
         }
 
-        return new SemesterModel
+        return new Semester
         {
             AcademicYearId = academicYearId,
             Name = normalizedName,
@@ -212,15 +192,15 @@ public sealed class SemesterService(
         };
     }
 
-    private static SemesterResponse ToResponse(SemesterModel model) => new()
+    private static SemesterResponse ToResponse(Semester entity) => new()
     {
-        Id = model.Id,
-        AcademicYearId = model.AcademicYearId,
-        Name = model.Name,
-        StartDate = model.StartDate,
-        EndDate = model.EndDate,
-        CreatedAt = AsUtc(model.CreatedAt),
-        UpdatedAt = AsUtc(model.UpdatedAt)
+        Id = entity.Id,
+        AcademicYearId = entity.AcademicYearId,
+        Name = entity.Name,
+        StartDate = entity.StartDate,
+        EndDate = entity.EndDate,
+        CreatedAt = AsUtc(entity.CreatedAt),
+        UpdatedAt = AsUtc(entity.UpdatedAt)
     };
 
     private static DateTime AsUtc(DateTime value) => value.Kind switch

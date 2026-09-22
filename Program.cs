@@ -5,9 +5,8 @@ using log4net;
 using log4net.Config;
 using Maiven_Portal_Managment.Configuration;
 using Maiven_Portal_Managment.Data;
-using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Middleware;
-using Maiven_Portal_Managment.Models;
+using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Repository;
 using Maiven_Portal_Managment.Services;
 using Microsoft.AspNetCore.Identity;
@@ -48,14 +47,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException(
         "The ConnectionStrings__DefaultConnection environment variable is not configured.");
 builder.Services
-    .AddControllers(options =>
-        options.Filters.AddService<ControllerActionLoggingFilter>())
+    .AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
-builder.Services.AddScoped<ActionLogService>();
-builder.Services.AddScoped<ControllerActionLoggingFilter>();
 
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<UserRepository>();
@@ -72,7 +68,7 @@ builder.Services.AddScoped<AcademicYearService>();
 builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<CourseSectionService>();
 builder.Services.AddScoped<AnnouncementService>();
-builder.Services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
@@ -93,7 +89,12 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Keep exception handling first so it can catch failures from all downstream middleware.
+// Request logging is outermost so one line is written per request (try/finally),
+// even when the exception middleware below handles a failure.
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+// Keep exception handling inside the request logger so it can catch failures
+// from all downstream middleware.
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

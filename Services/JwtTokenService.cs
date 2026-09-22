@@ -2,8 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Maiven_Portal_Managment.Configuration;
+using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos;
-using Maiven_Portal_Managment.Models;
 using Maiven_Portal_Managment.Services.Security;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -15,7 +15,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options)
     private readonly JwtOptions _options = options.Value;
 
     public AccessTokenResult CreateAccessToken(
-        UserModel user,
+        User user,
         AuthRoleAssignment roleAssignment)
     {
         var issuedAtUtc = DateTime.UtcNow;

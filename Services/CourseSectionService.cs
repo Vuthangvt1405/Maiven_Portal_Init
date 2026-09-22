@@ -1,9 +1,9 @@
-﻿using Maiven_Portal_Managment.Dtos.request;
+﻿using Maiven_Portal_Managment.Common;
+using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Exceptions;
-using Maiven_Portal_Managment.Logging;
-using Maiven_Portal_Managment.Models;
-using Maiven_Portal_Managment.Models.Enums;
+using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +12,9 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class CourseSectionService(
     CourseSectionRepository courseSectionRepository,
-    ActionLogService actionLogService,
     SemesterRepository semesterRepository,
     UserRepository userRepository,
-    CourseRepository courseRepository) 
+    CourseRepository courseRepository)
 {
     private const string DuplicateSectionCodeMessage =
         "A course section with the same code already exists in this semester.";
@@ -33,12 +32,6 @@ public sealed class CourseSectionService(
         CreateCourseSectionRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseSectionService>(
-            "Service",
-            nameof(CreateAsync),
-            ("CourseId", request.CourseId),
-            ("SemesterId", request.SemesterId),
-            ("TeacherUserRoleId", request.TeacherUserRoleId));
         ValidateScheduleAndCapacity(
             request.StartTime,
             request.EndTime,
@@ -58,7 +51,7 @@ public sealed class CourseSectionService(
         }
         else{
             var teacher = await userRepository.GetByIdAsync(request.TeacherUserRoleId, cancellationToken);
-            if (teacher is null || teacher.Role != SystemRoles.Teacher.Code)
+            if (teacher is null || !teacher.UserRoles.Any(ur => !ur.IsDeleted && ur.Role.Code == SystemRoles.Teacher.Code))
             {
                 throw new NotFoundException("The specified teacher could not be found.");
             }
@@ -96,7 +89,7 @@ public sealed class CourseSectionService(
             throw new ConflictException(DuplicateSectionCodeMessage);
         }
 
-        var model = new CourseSectionModel
+        var entity = new CourseSection
         {
             CourseId = request.CourseId,
             SemesterId = request.SemesterId,
@@ -116,9 +109,8 @@ public sealed class CourseSectionService(
 
         try
         {
-            var created = await courseSectionRepository.AddAsync(model, cancellationToken);
+            var created = await courseSectionRepository.AddAsync(entity, cancellationToken);
             var response = ToResponse(created);
-            operation.Complete(("CourseSectionId", response.Id));
             return response;
         }
         catch (DbUpdateException exception)
@@ -137,14 +129,6 @@ public sealed class CourseSectionService(
         CourseSectionQueryParameters parameters,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseSectionService>(
-            "Service",
-            nameof(GetPagedAsync),
-            ("CourseId", parameters.CourseId),
-            ("SemesterId", parameters.SemesterId),
-            ("TeacherUserRoleId", parameters.TeacherUserRoleId),
-            ("RequestedPageNumber", parameters.PageNumber),
-            ("RequestedPageSize", parameters.PageSize));
         var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
 
@@ -163,11 +147,6 @@ public sealed class CourseSectionService(
             .Select(ToResponse)
             .ToArray();
 
-        operation.Complete(
-            ("PageNumber", pageNumber),
-            ("PageSize", pageSize),
-            ("ResultCount", items.Length),
-            ("TotalItems", result.TotalItems));
         return (items, result.TotalItems);
     }
 
@@ -175,10 +154,6 @@ public sealed class CourseSectionService(
         long sectionId,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseSectionService>(
-            "Service",
-            nameof(GetByIdAsync),
-            ("CourseSectionId", sectionId));
         var section = await courseSectionRepository.GetByIdAsync(sectionId, cancellationToken);
         if (section is null)
         {
@@ -186,7 +161,6 @@ public sealed class CourseSectionService(
         }
 
         var response = ToResponse(section);
-        operation.Complete(("CourseSectionId", response.Id));
         return response;
     }
 
@@ -244,10 +218,6 @@ public sealed class CourseSectionService(
         UpdateCourseSectionRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<CourseSectionService>(
-            "Service",
-            nameof(UpdateAsync),
-            ("CourseSectionId", sectionId));
         var existing = await courseSectionRepository.GetByIdAsync(sectionId, cancellationToken);
         if (existing is null)
         {
@@ -264,7 +234,7 @@ public sealed class CourseSectionService(
         if (request.TeacherUserRoleId.HasValue)
         {
             var teacher = await userRepository.GetByIdAsync(request.TeacherUserRoleId.Value, cancellationToken);
-            if (teacher is null || teacher.Role != SystemRoles.Teacher.Code)
+            if (teacher is null || !teacher.UserRoles.Any(ur => !ur.IsDeleted && ur.Role.Code == SystemRoles.Teacher.Code))
             {
                 throw new NotFoundException("The specified teacher could not be found.");
             }
@@ -298,7 +268,6 @@ public sealed class CourseSectionService(
             }
 
             var response = ToResponse(updated);
-            operation.Complete(("CourseSectionId", response.Id));
             return response;
         }
         catch (DbUpdateException exception)
@@ -393,22 +362,22 @@ public sealed class CourseSectionService(
         return new ConflictException("The course section conflicts with an existing record.", exception);
     }
 
-    private static CourseSectionResponse ToResponse(CourseSectionModel model) => new()
+    private static CourseSectionResponse ToResponse(CourseSection entity) => new()
     {
-        Id = model.Id,
-        CourseId = model.CourseId,
-        SemesterId = model.SemesterId,
-        TeacherUserRoleId = model.TeacherUserRoleId,
-        SectionCode = model.SectionCode,
-        Capacity = model.Capacity,
-        DayOfWeek = model.DayOfWeek,
-        StartTime = model.StartTime,
-        EndTime = model.EndTime,
-        StartDate = model.StartDate,
-        EndDate = model.EndDate,
-        Status = model.Status,
-        CreatedAt = AsUtc(model.CreatedAt),
-        UpdatedAt = AsUtc(model.UpdatedAt)
+        Id = entity.Id,
+        CourseId = entity.CourseId,
+        SemesterId = entity.SemesterId,
+        TeacherUserRoleId = entity.TeacherUserRoleId,
+        SectionCode = entity.SectionCode,
+        Capacity = entity.Capacity,
+        DayOfWeek = entity.DayOfWeek,
+        StartTime = entity.StartTime,
+        EndTime = entity.EndTime,
+        StartDate = entity.StartDate,
+        EndDate = entity.EndDate,
+        Status = entity.Status,
+        CreatedAt = AsUtc(entity.CreatedAt),
+        UpdatedAt = AsUtc(entity.UpdatedAt)
     };
 
     private static DateTime AsUtc(DateTime value) => value.Kind switch

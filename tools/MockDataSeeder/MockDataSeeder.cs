@@ -1,7 +1,7 @@
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Data.Entities.Enums;
-using Maiven_Portal_Managment.Models;
+using Maiven_Portal_Managment.Common;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +11,7 @@ public sealed class MockDataSeeder(AppDbContext dbContext)
 {
     private const string MockPassword = "MockPassword123!";
     private const string MockAcademicYearName = "[MOCK] 2026-2027";
-    private readonly PasswordHasher<UserModel> _passwordHasher = new();
+    private readonly PasswordHasher<User> _passwordHasher = new();
     private readonly MockSeedSummary _summary = new();
 
     public async Task<MockSeedSummary> SeedAsync(CancellationToken cancellationToken)
@@ -140,7 +140,7 @@ public sealed class MockDataSeeder(AppDbContext dbContext)
             }
 
             user.PasswordHash = _passwordHasher.HashPassword(
-                new UserModel { Email = seed.Email },
+                new User { Email = seed.Email },
                 MockPassword);
             user.FullName = seed.FullName;
             user.DateOfBirth = seed.DateOfBirth;

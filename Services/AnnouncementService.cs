@@ -1,8 +1,8 @@
 using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Exceptions;
-using Maiven_Portal_Managment.Logging;
-using Maiven_Portal_Managment.Models;
+using Maiven_Portal_Managment.Common;
+using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Repository;
 using Maiven_Portal_Managment.Services.Security;
 
@@ -10,18 +10,12 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class AnnouncementService(
     AnnouncementRepository announcementRepository,
-    CurrentUserContext currentUserContext,
-    ActionLogService actionLogService)
+    CurrentUserContext currentUserContext)
 {
     public async Task<AnnouncementResponse> CreateAsync(CreateAnnouncementRequest request, CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AnnouncementService>(
-            "Service",
-            nameof(CreateAsync),
-            ("CourseSectionId", request.SectionId));
-        var model = BuildModel(GetCurrentUserId(), request.SectionId, request.Title, request.Content);
-        var response = ToResponse(await announcementRepository.AddAsync(model, cancellationToken));
-        operation.Complete(("AnnouncementId", response.Id));
+        var entity = BuildEntity(GetCurrentUserId(), request.SectionId, request.Title, request.Content);
+        var response = ToResponse(await announcementRepository.AddAsync(entity, cancellationToken));
         return response;
     }
 
@@ -32,31 +26,17 @@ public sealed class AnnouncementService(
         int pageSize,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AnnouncementService>(
-            "Service",
-            nameof(GetPagedAsync),
-            ("CourseSectionId", sectionId),
-            ("PageNumber", pageNumber),
-            ("PageSize", pageSize));
         var result = await announcementRepository.GetPagedAsync(
             sectionId, title, pageNumber, pageSize, cancellationToken);
         var items = result.Items.Select(ToResponse).ToArray();
-        operation.Complete(
-            ("ResultCount", items.Length),
-            ("TotalItems", result.TotalItems));
         return (items, result.TotalItems);
     }
 
     public async Task<AnnouncementResponse> GetByIdAsync(long announcementId, CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AnnouncementService>(
-            "Service",
-            nameof(GetByIdAsync),
-            ("AnnouncementId", announcementId));
         var announcement = await announcementRepository.GetByIdAsync(announcementId, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
         var response = ToResponse(announcement);
-        operation.Complete(("AnnouncementId", response.Id));
         return response;
     }
 
@@ -65,29 +45,20 @@ public sealed class AnnouncementService(
         UpdateAnnouncementRequest request,
         CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AnnouncementService>(
-            "Service",
-            nameof(UpdateAsync),
-            ("AnnouncementId", announcementId));
         var existing = await announcementRepository.GetByIdAsync(announcementId, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
         EnsureOwnerOrAdmin(existing.CreatedById);
 
-        var updated = BuildModel(existing.CreatedById, request.SectionId, request.Title, request.Content);
+        var updated = BuildEntity(existing.CreatedById, request.SectionId, request.Title, request.Content);
         updated.Id = announcementId;
         var result = await announcementRepository.UpdateAsync(updated, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
         var response = ToResponse(result);
-        operation.Complete(("AnnouncementId", response.Id));
         return response;
     }
 
     public async Task DeleteAsync(long announcementId, CancellationToken cancellationToken)
     {
-        using var operation = actionLogService.Begin<AnnouncementService>(
-            "Service",
-            nameof(DeleteAsync),
-            ("AnnouncementId", announcementId));
         var existing = await announcementRepository.GetByIdAsync(announcementId, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
         EnsureOwnerOrAdmin(existing.CreatedById);
@@ -96,8 +67,6 @@ public sealed class AnnouncementService(
         {
             throw new NotFoundException("The announcement could not be found.");
         }
-
-        operation.Complete(("AnnouncementId", announcementId));
     }
 
     private long GetCurrentUserId() => currentUserContext.UserId
@@ -111,7 +80,7 @@ public sealed class AnnouncementService(
         }
     }
 
-    private static AnnouncementModel BuildModel(long createdById, long? sectionId, string? title, string? content)
+    private static Announcement BuildEntity(long createdById, long? sectionId, string? title, string? content)
     {
         var normalizedTitle = title?.Trim() ?? string.Empty;
         var normalizedContent = content?.Trim() ?? string.Empty;
@@ -126,7 +95,7 @@ public sealed class AnnouncementService(
             throw new BadRequestException("Announcement content is required.");
         }
 
-        return new AnnouncementModel
+        return new Announcement
         {
             CreatedById = createdById,
             SectionId = sectionId,
@@ -137,14 +106,14 @@ public sealed class AnnouncementService(
         };
     }
 
-    private static AnnouncementResponse ToResponse(AnnouncementModel model) => new()
+    private static AnnouncementResponse ToResponse(Announcement entity) => new()
     {
-        Id = model.Id,
-        CreatedById = model.CreatedById,
-        SectionId = model.SectionId,
-        Title = model.Title,
-        Content = model.Content,
-        CreatedAt = model.CreatedAt,
-        UpdatedAt = model.UpdatedAt
+        Id = entity.Id,
+        CreatedById = entity.CreatedById,
+        SectionId = entity.SectionId,
+        Title = entity.Title,
+        Content = entity.Content,
+        CreatedAt = entity.CreatedAt,
+        UpdatedAt = entity.UpdatedAt
     };
 }
