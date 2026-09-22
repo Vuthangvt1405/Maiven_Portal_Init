@@ -366,7 +366,7 @@ public sealed class CourseSectionService(
             .Select(type => new GradeComponent
             {
                 Name = type.GetDescription(),
-                Weight = 0m
+                Weight = 25m
             })
             .ToList();
 
