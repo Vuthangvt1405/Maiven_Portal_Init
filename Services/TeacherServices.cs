@@ -1,11 +1,14 @@
 using log4net;
+using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Dtos;
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Services;
 
@@ -37,10 +40,42 @@ public sealed class TeacherService(
 			AvatarUrl = NormalizeOptional(request.AvatarUrl)
 		};
 		var passwordHash = passwordHasher.HashPassword(user, request.Password);
-		var account = await authRepository.CreateTeacherAsync(
-			user,
-			passwordHash,
-			cancellationToken);
+
+		var role = await authRepository.GetRoleByCodeAsync(
+			SystemRoles.Teacher.Code,
+			cancellationToken)
+			?? throw new InvalidOperationException(
+				$"The required {SystemRoles.Teacher.Code} role is not configured.");
+
+		user.PasswordHash = passwordHash;
+		user.UserRoles.Add(new UserRole
+		{
+			RoleId = role.Id
+		});
+
+		try
+		{
+			await authRepository.AddUserAsync(user, cancellationToken);
+		}
+		catch (DbUpdateException exception)
+			when (AuthRepository.IsUniqueConstraintViolation(exception))
+		{
+			throw new ConflictException("An account with this email already exists.", exception);
+		}
+
+		var account = new AuthAccount
+		{
+			User = user,
+			PasswordHash = user.PasswordHash,
+			RoleAssignments =
+			[
+				new AuthRoleAssignment
+				{
+					RoleUserId = user.UserRoles.Single().Id,
+					RoleCode = role.Code
+				}
+			]
+		};
 
 		var roleAssignment = account.RoleAssignments.Single();
 

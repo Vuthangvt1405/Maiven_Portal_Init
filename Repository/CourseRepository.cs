@@ -82,36 +82,27 @@ namespace Maiven_Portal_Managment.Repository
             return (entities, totalItems);
         }
 
+        public async Task<Course?> GetTrackedByIdAsync(
+            long courseId,
+            CancellationToken cancellationToken)
+        {
+            var entity = await dbContext.Courses
+                .SingleOrDefaultAsync(
+                    course => course.Id == courseId &&
+                              !course.IsDeleted,
+                    cancellationToken);
+
+            return entity;
+        }
+
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken) =>
+            dbContext.SaveChangesAsync(cancellationToken);
+
         public async Task<Course> AddAsync(
             Course entity,
             CancellationToken cancellationToken)
         {
             dbContext.Courses.Add(entity);
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            return entity;
-        }
-
-        public async Task<Course?> UpdateAsync(
-            Course values,
-            CancellationToken cancellationToken)
-        {
-            var entity = await dbContext.Courses
-                .SingleOrDefaultAsync(
-                    course => course.Id == values.Id &&
-                              !course.IsDeleted,
-                    cancellationToken);
-
-            if (entity is null)
-            {
-                return null;
-            }
-
-            entity.CourseName = values.CourseName;
-            entity.Credits = values.Credits;
-            entity.Description = values.Description;
-            entity.Status = values.Status;
 
             await dbContext.SaveChangesAsync(cancellationToken);
 

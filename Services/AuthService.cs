@@ -8,6 +8,7 @@ using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Repository;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Services;
 
@@ -41,9 +42,10 @@ public sealed class AuthService(
             AvatarUrl = NormalizeOptional(request.AvatarUrl)
         };
         var passwordHash = passwordHasher.HashPassword(user, request.Password);
-        var account = await authRepository.CreateStudentAsync(
+        var account = await CreateAccountWithRoleAsync(
             user,
             passwordHash,
+            SystemRoles.Student.Code,
             cancellationToken);
 
         var response = CreateAuthResponse(account, account.RoleAssignments.Single());
@@ -109,6 +111,49 @@ public sealed class AuthService(
         }
 
         return CreateAuthResponse(account, roleAssignment);
+    }
+
+    private async Task<AuthAccount> CreateAccountWithRoleAsync(
+        User user,
+        string passwordHash,
+        string roleCode,
+        CancellationToken cancellationToken)
+    {
+        var role = await authRepository.GetRoleByCodeAsync(roleCode, cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"The required {roleCode} role is not configured.");
+
+        user.PasswordHash = passwordHash;
+        user.UserRoles.Add(new UserRole
+        {
+            RoleId = role.Id
+        });
+
+        try
+        {
+            await authRepository.AddUserAsync(user, cancellationToken);
+        }
+        catch (DbUpdateException exception)
+            when (AuthRepository.IsUniqueConstraintViolation(exception))
+        {
+            throw new ConflictException("An account with this email already exists.", exception);
+        }
+
+        var userRole = user.UserRoles.Single();
+
+        return new AuthAccount
+        {
+            User = user,
+            PasswordHash = user.PasswordHash,
+            RoleAssignments =
+            [
+                new AuthRoleAssignment
+                {
+                    RoleUserId = userRole.Id,
+                    RoleCode = role.Code
+                }
+            ]
+        };
     }
 
     private AuthResponse CreateAuthResponse(

@@ -157,6 +157,38 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         return Ok(response);
     }
 
+    [Authorize(Roles = SystemRoles.Student.Code)]
+    [HttpGet("student/me/course-results")]
+    public async Task<ActionResult<PagedResponse<StudentCourseResultResponse>>> StudentGetResults(
+        [FromQuery] StudentCourseResultQueryParameters parameters,
+        CurrentUserContext currentStudentContext,
+        CancellationToken cancellationToken)
+    {
+        var studentUserRoleId = currentStudentContext.RoleUserId;
+        if (studentUserRoleId is null)
+        {
+            return BadRequest("Invalid student user role ID.");
+        }
+
+        var result = await courseSectionService.StudentGetResultsAsync(
+            studentUserRoleId,
+            parameters,
+            cancellationToken);
+
+        var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
+        var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
+        var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
+
+        return Ok(new PagedResponse<StudentCourseResultResponse>
+        {
+            Items = result.Items,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalItems = result.TotalItems,
+            TotalPages = totalPages
+        });
+    }
+
 
     [HttpPut("course-sections/{courseSectionId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]

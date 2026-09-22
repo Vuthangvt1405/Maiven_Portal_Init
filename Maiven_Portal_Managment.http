@@ -169,3 +169,13 @@ Content-Type: application/json
 ### Delete a course (ADMIN only)
 DELETE {{host}}/api/courses/{{courseId}}
 Authorization: Bearer {{adminToken}}
+
+### List my course results with component scores and final result (STUDENT only)
+GET {{host}}/api/student/me/course-results?pageNumber=1&pageSize=10
+Authorization: Bearer {{studentToken}}
+Accept: application/json
+
+### List my course results for one academic year (STUDENT only)
+GET {{host}}/api/student/me/course-results?academicYearId=1&pageNumber=1&pageSize=10
+Authorization: Bearer {{studentToken}}
+Accept: application/json

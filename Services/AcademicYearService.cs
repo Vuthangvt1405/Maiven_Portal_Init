@@ -71,7 +71,7 @@ public sealed class AcademicYearService(
             request.Status);
         proposed.Id = academicYearId;
 
-        var existing = await academicYearRepository.GetByIdAsync(
+        var existing = await academicYearRepository.GetTrackedByIdAsync(
             academicYearId,
             cancellationToken);
         if (existing is null)
@@ -96,15 +96,14 @@ public sealed class AcademicYearService(
 
         try
         {
-            var updated = await academicYearRepository.UpdateAsync(
-                proposed,
-                cancellationToken);
-            if (updated is null)
-            {
-                throw new NotFoundException("The academic year could not be found.");
-            }
+            existing.Name = proposed.Name;
+            existing.StartDate = proposed.StartDate;
+            existing.EndDate = proposed.EndDate;
+            existing.Status = proposed.Status;
 
-            var response = ToResponse(updated);
+            await academicYearRepository.SaveChangesAsync(cancellationToken);
+
+            var response = ToResponse(existing);
             return response;
         }
         catch (DbUpdateException exception)

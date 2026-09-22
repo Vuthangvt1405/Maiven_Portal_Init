@@ -107,6 +107,11 @@ public sealed class CourseSectionService(
             UpdatedAt = DateTime.UtcNow
         };
 
+        foreach (var component in BuildDefaultGradeComponents())
+        {
+            entity.GradeComponents.Add(component);
+        }
+
         try
         {
             var created = await courseSectionRepository.AddAsync(entity, cancellationToken);
@@ -179,7 +184,11 @@ public sealed class CourseSectionService(
 
         var result = await courseSectionRepository.GetPagedForTeacherAsync(
             teacherUserRoleId.Value,
-            parameters,
+            parameters.CourseId,
+            parameters.SemesterId,
+            parameters.SectionCode,
+            parameters.DayOfWeek,
+            parameters.Status,
             pageNumber,
             pageSize,
             cancellationToken);
@@ -203,12 +212,45 @@ public sealed class CourseSectionService(
 
         var result = await courseSectionRepository.GetPagedForStudentAsync(
             studentUserRoleId.Value,
-            parameters,
+            parameters.CourseId,
+            parameters.SemesterId,
+            parameters.SectionCode,
+            parameters.DayOfWeek,
+            parameters.Status,
             pageNumber,
             pageSize,
             cancellationToken);
 
         var items = result.Items.Select(ToResponse).ToArray();
+        return (items, result.TotalItems);
+    }
+
+    public async Task<(IReadOnlyList<StudentCourseResultResponse> Items, int TotalItems)> StudentGetResultsAsync(
+        long? studentUserRoleId,
+        StudentCourseResultQueryParameters parameters,
+        CancellationToken cancellationToken)
+    {
+        if (!studentUserRoleId.HasValue)
+        {
+            return (Array.Empty<StudentCourseResultResponse>(), 0);
+        }
+
+        var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
+        var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
+
+        var result = await courseSectionRepository.GetEnrollmentsWithResultsForStudentAsync(
+            studentUserRoleId.Value,
+            parameters.AcademicYearId,
+            parameters.SemesterId,
+            parameters.CourseId,
+            pageNumber,
+            pageSize,
+            cancellationToken);
+
+        var items = result.Items
+            .Select(ToStudentResultResponse)
+            .ToArray();
+
         return (items, result.TotalItems);
     }
 
@@ -218,7 +260,7 @@ public sealed class CourseSectionService(
         UpdateCourseSectionRequest request,
         CancellationToken cancellationToken)
     {
-        var existing = await courseSectionRepository.GetByIdAsync(sectionId, cancellationToken);
+        var existing = await courseSectionRepository.GetTrackedByIdAsync(sectionId, cancellationToken);
         if (existing is null)
         {
             throw new NotFoundException("The course section could not be found.");
@@ -261,13 +303,9 @@ public sealed class CourseSectionService(
 
         try
         {
-            var updated = await courseSectionRepository.UpdateAsync(existing, cancellationToken);
-            if (updated is null)
-            {
-                throw new NotFoundException("The course section could not be found.");
-            }
+            await courseSectionRepository.SaveChangesAsync(cancellationToken);
 
-            var response = ToResponse(updated);
+            var response = ToResponse(existing);
             return response;
         }
         catch (DbUpdateException exception)
@@ -291,7 +329,7 @@ public sealed class CourseSectionService(
         var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
 
-        var result = await courseSectionRepository.GetCourseSectionDetailsWithStudentsAsync(
+        var result = await courseSectionRepository.GetEnrollmentsForTeacherDetailAsync(
             teacherUserRoleId,
             courseSectionId,
             pageNumber,
@@ -307,7 +345,7 @@ public sealed class CourseSectionService(
 
         var pagedStudents = new PagedResponse<StudentInCourseSectionResponse>
         {
-            Items = result.Students,
+            Items = result.Enrollments.Select(ToStudentInSectionResponse).ToArray(),
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalItems = result.TotalItems,
@@ -322,6 +360,68 @@ public sealed class CourseSectionService(
             Students: pagedStudents
         );
     }
+
+    private static IReadOnlyList<GradeComponent> BuildDefaultGradeComponents() =>
+        Enum.GetValues<DefaultGradeComponent>()
+            .Select(type => new GradeComponent
+            {
+                Name = type.GetDescription(),
+                Weight = 0m
+            })
+            .ToList();
+
+    private static StudentInCourseSectionResponse ToStudentInSectionResponse(Enrollment enrollment) =>
+        new(
+            enrollment.Id,
+            enrollment.StudentUserRoleId,
+            enrollment.StudentUserRole.User.FullName,
+            enrollment.StudentUserRole.User.Email,
+            enrollment.StudentScores
+                .Where(score => !score.IsDeleted)
+                .Select(score => new StudentScoreDetailResponse(
+                    score.ComponentId,
+                    score.Component.Name,
+                    score.Component.Weight,
+                    score.Score))
+                .ToList());
+
+    private static StudentCourseResultResponse ToStudentResultResponse(Enrollment enrollment) => new()
+    {
+        EnrollmentId = enrollment.Id,
+        SectionId = enrollment.SectionId,
+        SectionCode = enrollment.Section.SectionCode,
+        CourseId = enrollment.Section.CourseId,
+        CourseCode = enrollment.Section.Course.CourseCode,
+        CourseName = enrollment.Section.Course.CourseName,
+        Credits = enrollment.Section.Course.Credits,
+        SemesterId = enrollment.Section.SemesterId,
+        SemesterName = enrollment.Section.Semester.Name,
+        AcademicYearId = enrollment.Section.Semester.AcademicYearId,
+        AcademicYearName = enrollment.Section.Semester.AcademicYear.Name,
+        ComponentScores = enrollment.Section.GradeComponents
+            .Where(component => !component.IsDeleted)
+            .OrderBy(component => component.Id)
+            .Select(component => new StudentComponentScoreResponse
+            {
+                ComponentId = component.Id,
+                ComponentName = component.Name,
+                Weight = component.Weight,
+                Score = enrollment.StudentScores
+                    .Where(score => score.ComponentId == component.Id && !score.IsDeleted)
+                    .Select(score => score.Score)
+                    .FirstOrDefault()
+            })
+            .ToList(),
+        FinalResult = enrollment.CourseResult is null || enrollment.CourseResult.IsDeleted
+            ? null
+            : new StudentFinalResultResponse
+            {
+                FinalScore = enrollment.CourseResult.FinalScore,
+                LetterGrade = enrollment.CourseResult.LetterGrade,
+                GradePoint = enrollment.CourseResult.GradePoint,
+                ResultStatus = enrollment.CourseResult.ResultStatus
+            }
+    };
 
     private static void ValidateScheduleAndCapacity(
         ClassPeriod startPeriod,

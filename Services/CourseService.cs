@@ -115,7 +115,7 @@ public sealed class CourseService(
         UpdateCourseRequest request,
         CancellationToken cancellationToken)
     {
-        var existing = await courseRepository.GetByIdAsync(
+        var existing = await courseRepository.GetTrackedByIdAsync(
             courseId,
             cancellationToken);
 
@@ -135,17 +135,9 @@ public sealed class CourseService(
 
         try
         {
-            var updated = await courseRepository.UpdateAsync(
-                existing,
-                cancellationToken);
+            await courseRepository.SaveChangesAsync(cancellationToken);
 
-            if (updated is null)
-            {
-                throw new NotFoundException(
-                    "The course could not be found.");
-            }
-
-            var response = ToResponse(updated);
+            var response = ToResponse(existing);
             return response;
         }
         catch (DbUpdateException exception)

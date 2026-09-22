@@ -1,8 +1,6 @@
-using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos;
-using Maiven_Portal_Managment.Exceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,96 +48,25 @@ public sealed class AuthRepository(AppDbContext dbContext)
         };
     }
 
-    public async Task<AuthAccount> CreateStudentAsync(
-        User user,
-        string passwordHash,
+    public async Task<Role?> GetRoleByCodeAsync(
+        string roleCode,
         CancellationToken cancellationToken)
     {
-        var studentRole = await dbContext.Roles
+        var role = await dbContext.Roles
             .SingleOrDefaultAsync(
-                role => role.Code == SystemRoles.Student.Code,
-                cancellationToken)
-            ?? throw new InvalidOperationException(
-                $"The required {SystemRoles.Student.Code} role is not configured.");
+                role => role.Code == roleCode,
+                cancellationToken);
 
-        user.PasswordHash = passwordHash;
-        user.UserRoles.Add(new UserRole
-        {
-            RoleId = studentRole.Id
-        });
-
-        dbContext.Users.Add(user);
-
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
-        {
-            throw new ConflictException("An account with this email already exists.", exception);
-        }
-
-        var userRole = user.UserRoles.Single();
-
-        return new AuthAccount
-        {
-            User = user,
-            PasswordHash = user.PasswordHash,
-            RoleAssignments =
-            [
-                new AuthRoleAssignment
-                {
-                    RoleUserId = userRole.Id,
-                    RoleCode = studentRole.Code
-                }
-            ]
-        };
+        return role;
     }
 
-    public async Task<AuthAccount> CreateTeacherAsync(
+    public async Task<User> AddUserAsync(
         User user,
-        string passwordHash,
         CancellationToken cancellationToken)
     {
-        var teacherRole = await dbContext.Roles
-            .SingleOrDefaultAsync(
-                role => role.Code == SystemRoles.Teacher.Code,
-                cancellationToken)
-            ?? throw new InvalidOperationException(
-                $"The required {SystemRoles.Teacher.Code} role is not configured.");
-
-        user.PasswordHash = passwordHash;
-        user.UserRoles.Add(new UserRole
-        {
-            RoleId = teacherRole.Id
-        });
-
         dbContext.Users.Add(user);
-
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
-        {
-            throw new ConflictException("An account with this email already exists.", exception);
-        }
-
-        var userRole = user.UserRoles.Single();
-
-        return new AuthAccount
-        {
-            User = user,
-            PasswordHash = user.PasswordHash,
-            RoleAssignments =
-            [
-                new AuthRoleAssignment
-                {
-                    RoleUserId = userRole.Id,
-                    RoleCode = teacherRole.Code
-                }
-            ]
-        };
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return user;
     }
 
     public async Task UpdatePasswordHashAsync(
@@ -156,6 +83,6 @@ public sealed class AuthRepository(AppDbContext dbContext)
                 cancellationToken);
     }
 
-    private static bool IsUniqueConstraintViolation(DbUpdateException exception) =>
+    public static bool IsUniqueConstraintViolation(DbUpdateException exception) =>
         exception.GetBaseException() is SqlException { Number: 2601 or 2627 };
 }

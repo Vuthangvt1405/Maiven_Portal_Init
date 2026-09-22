@@ -80,22 +80,24 @@ public sealed class UserService(
             throw new UnauthorizedException("An authenticated user is required.");
         }
 
-        var updatedUser = await userRepository.UpdateProfileAsync(
-            userId,
-            request.FullName.Trim(),
-            request.DateOfBirth,
-            request.Gender,
-            NormalizeOptional(request.Phone),
-            NormalizeOptional(request.Address),
-            NormalizeOptional(request.AvatarUrl),
-            cancellationToken);
+        var user = await userRepository.GetTrackedByIdAsync(userId, cancellationToken);
 
-        if (updatedUser is null)
+        if (user is null)
         {
             throw new NotFoundException("The active user account could not be found.");
         }
 
-        var response = ToUserProfileResponse(updatedUser);
+        user.FullName = request.FullName.Trim();
+        user.DateOfBirth = request.DateOfBirth;
+        user.Gender = request.Gender;
+        user.Phone = NormalizeOptional(request.Phone);
+        user.Address = NormalizeOptional(request.Address);
+        user.AvatarUrl = NormalizeOptional(request.AvatarUrl);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await userRepository.SaveChangesAsync(cancellationToken);
+
+        var response = ToUserProfileResponse(user);
         return response;
     }
 

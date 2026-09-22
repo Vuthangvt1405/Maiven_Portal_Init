@@ -31,6 +31,21 @@ public sealed class AcademicYearRepository(AppDbContext dbContext)
         return entity;
     }
 
+    public async Task<AcademicYear?> GetTrackedByIdAsync(
+        long academicYearId,
+        CancellationToken cancellationToken)
+    {
+        var entity = await dbContext.AcademicYears
+            .SingleOrDefaultAsync(
+                academicYear => academicYear.Id == academicYearId,
+                cancellationToken);
+
+        return entity;
+    }
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+
     public async Task<IReadOnlyList<Semester>> GetSemestersAsync(
         long academicYearId,
         CancellationToken cancellationToken)
@@ -48,28 +63,6 @@ public sealed class AcademicYearRepository(AppDbContext dbContext)
         CancellationToken cancellationToken)
     {
         dbContext.AcademicYears.Add(entity);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return entity;
-    }
-
-    public async Task<AcademicYear?> UpdateAsync(
-        AcademicYear values,
-        CancellationToken cancellationToken)
-    {
-        var entity = await dbContext.AcademicYears.SingleOrDefaultAsync(
-            academicYear => academicYear.Id == values.Id,
-            cancellationToken);
-
-        if (entity is null)
-        {
-            return null;
-        }
-
-        entity.Name = values.Name;
-        entity.StartDate = values.StartDate;
-        entity.EndDate = values.EndDate;
-        entity.Status = values.Status;
-
         await dbContext.SaveChangesAsync(cancellationToken);
         return entity;
     }

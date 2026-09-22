@@ -45,15 +45,17 @@ public sealed class AnnouncementService(
         UpdateAnnouncementRequest request,
         CancellationToken cancellationToken)
     {
-        var existing = await announcementRepository.GetByIdAsync(announcementId, cancellationToken)
+        var existing = await announcementRepository.GetTrackedByIdAsync(announcementId, cancellationToken)
             ?? throw new NotFoundException("The announcement could not be found.");
         EnsureOwnerOrAdmin(existing.CreatedById);
 
-        var updated = BuildEntity(existing.CreatedById, request.SectionId, request.Title, request.Content);
-        updated.Id = announcementId;
-        var result = await announcementRepository.UpdateAsync(updated, cancellationToken)
-            ?? throw new NotFoundException("The announcement could not be found.");
-        var response = ToResponse(result);
+        var validated = BuildEntity(existing.CreatedById, request.SectionId, request.Title, request.Content);
+        existing.SectionId = validated.SectionId;
+        existing.Title = validated.Title;
+        existing.Content = validated.Content;
+
+        await announcementRepository.SaveChangesAsync(cancellationToken);
+        var response = ToResponse(existing);
         return response;
     }
 

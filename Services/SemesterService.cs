@@ -59,7 +59,7 @@ public sealed class SemesterService(
                 "SemesterId must be greater than zero.");
         }
 
-        var existing = await semesterRepository.GetByIdAsync(
+        var existing = await semesterRepository.GetTrackedByIdAsync(
             semesterId,
             cancellationToken);
         if (existing is null)
@@ -90,13 +90,14 @@ public sealed class SemesterService(
         await ValidateAcademicYearAsync(proposed, cancellationToken);
         await ValidateConflictsAsync(proposed, semesterId, cancellationToken);
 
-        var updated = await semesterRepository.UpdateAsync(proposed, cancellationToken);
-        if (updated is null)
-        {
-            throw new NotFoundException("The semester could not be found.");
-        }
+        existing.AcademicYearId = proposed.AcademicYearId;
+        existing.Name = proposed.Name;
+        existing.StartDate = proposed.StartDate;
+        existing.EndDate = proposed.EndDate;
 
-        var response = ToResponse(updated);
+        await semesterRepository.SaveChangesAsync(cancellationToken);
+
+        var response = ToResponse(existing);
         return response;
     }
 

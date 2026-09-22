@@ -44,27 +44,19 @@ public sealed class AnnouncementRepository(AppDbContext dbContext)
         return (entities, totalItems);
     }
 
-    public async Task<Announcement> AddAsync(Announcement entity, CancellationToken cancellationToken)
+    public async Task<Announcement?> GetTrackedByIdAsync(long announcementId, CancellationToken cancellationToken)
     {
-        dbContext.Announcements.Add(entity);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        var entity = await dbContext.Announcements
+            .SingleOrDefaultAsync(announcement => announcement.Id == announcementId, cancellationToken);
         return entity;
     }
 
-    public async Task<Announcement?> UpdateAsync(Announcement values, CancellationToken cancellationToken)
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+
+    public async Task<Announcement> AddAsync(Announcement entity, CancellationToken cancellationToken)
     {
-        var entity = await dbContext.Announcements
-            .SingleOrDefaultAsync(announcement => announcement.Id == values.Id, cancellationToken);
-
-        if (entity is null)
-        {
-            return null;
-        }
-
-        entity.SectionId = values.SectionId;
-        entity.Title = values.Title;
-        entity.Content = values.Content;
-
+        dbContext.Announcements.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
         return entity;
     }

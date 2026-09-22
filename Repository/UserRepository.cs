@@ -1,20 +1,13 @@
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
-using Maiven_Portal_Managment.Data.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maiven_Portal_Managment.Repository;
 
 public sealed class UserRepository(AppDbContext dbContext)
 {
-    public async Task<User?> UpdateProfileAsync(
+    public async Task<User?> GetTrackedByIdAsync(
         long userId,
-        string fullName,
-        DateOnly? dateOfBirth,
-        Gender? gender,
-        string? phone,
-        string? address,
-        string? avatarUrl,
         CancellationToken cancellationToken)
     {
         var user = await dbContext.Users
@@ -22,23 +15,11 @@ public sealed class UserRepository(AppDbContext dbContext)
                 .ThenInclude(userRole => userRole.Role)
             .SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
-        if (user is null)
-        {
-            return null;
-        }
-
-        user.FullName = fullName;
-        user.DateOfBirth = dateOfBirth;
-        user.Gender = gender;
-        user.Phone = phone;
-        user.Address = address;
-        user.AvatarUrl = avatarUrl;
-        user.UpdatedAt = DateTime.UtcNow;
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
         return user;
     }
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) =>
+        dbContext.SaveChangesAsync(cancellationToken);
 
     public async Task<IReadOnlyList<User>> GetAllAsync(
         CancellationToken cancellationToken)

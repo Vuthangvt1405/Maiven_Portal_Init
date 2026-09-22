@@ -52,25 +52,18 @@ public sealed class SemesterRepository(AppDbContext dbContext)
         return entity;
     }
 
-    public async Task<Semester?> UpdateAsync(
-        Semester values,
+    public async Task<Semester?> GetTrackedByIdAsync(
+        long semesterId,
         CancellationToken cancellationToken)
     {
-        var entity = await dbContext.Semesters.SingleOrDefaultAsync(
-            semester => semester.Id == values.Id,
-            cancellationToken);
+        var entity = await dbContext.Semesters
+            .SingleOrDefaultAsync(
+                semester => semester.Id == semesterId,
+                cancellationToken);
 
-        if (entity is null)
-        {
-            return null;
-        }
-
-        entity.AcademicYearId = values.AcademicYearId;
-        entity.Name = values.Name;
-        entity.StartDate = values.StartDate;
-        entity.EndDate = values.EndDate;
-
-        await dbContext.SaveChangesAsync(cancellationToken);
         return entity;
     }
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) =>
+        dbContext.SaveChangesAsync(cancellationToken);
 }

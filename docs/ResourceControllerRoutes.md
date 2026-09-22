@@ -23,6 +23,7 @@ Controllers are grouped by the resource/service they expose. Roles authorize ope
 | Courses | `GET` | `/api/courses/{courseId}` | Public |
 | Courses | `PUT` | `/api/courses/{courseId}` | Admin |
 | Courses | `DELETE` | `/api/courses/{courseId}` | Admin |
+| Student results | `GET` | `/api/student/me/course-results` | Student |
 
 ## Current-user behavior
 
