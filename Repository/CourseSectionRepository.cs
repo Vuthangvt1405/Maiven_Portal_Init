@@ -207,8 +207,8 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         entity.TeacherUserRoleId = values.TeacherUserRoleId;
         entity.Capacity = values.Capacity;
         entity.DayOfWeek = values.DayOfWeek;
-        entity.StartTime = values.StartTime;
-        entity.EndTime = values.EndTime;
+        entity.StartPeriod = values.StartPeriod;
+        entity.EndPeriod = values.EndPeriod;
         entity.StartDate = values.StartDate;
         entity.EndDate = values.EndDate;
         entity.Status = values.Status;

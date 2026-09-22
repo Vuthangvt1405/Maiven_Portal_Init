@@ -368,13 +368,13 @@ public sealed class MockDataSeeder(AppDbContext dbContext)
                 }
 
                 var teacher = teachers[(courseIndex + semesterIndex) % teachers.Count];
-                var startHour = 8 + (courseIndex % 3) * 3;
+                var startPeriod = 1 + (courseIndex % 3) * 3;
                 section.CourseId = course.Id;
                 section.TeacherUserRoleId = teacher.Role.Id;
                 section.Capacity = 30;
                 section.DayOfWeek = weekdays[courseIndex];
-                section.StartTime = new TimeOnly(startHour, 0);
-                section.EndTime = new TimeOnly(startHour + 2, 0);
+                section.StartPeriod = (ClassPeriod)startPeriod;
+                section.EndPeriod = (ClassPeriod)(startPeriod + 2);
                 section.StartDate = semester.StartDate;
                 section.EndDate = semester.EndDate;
                 section.Status = CourseSectionStatus.COMPLETED;

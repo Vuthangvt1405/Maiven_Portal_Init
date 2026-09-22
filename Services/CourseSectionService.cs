@@ -20,7 +20,7 @@ public sealed class CourseSectionService(
         "A course section with the same code already exists in this semester.";
 
     private const string InvalidTimeRangeMessage =
-        "Start time must be before end time.";
+        "Start period must be between 1 and 10 and before end period.";
 
     private const string InvalidDateRangeMessage =
         "Start date must be before or equal to end date.";
@@ -33,8 +33,8 @@ public sealed class CourseSectionService(
         CancellationToken cancellationToken)
     {
         ValidateScheduleAndCapacity(
-            request.StartTime,
-            request.EndTime,
+            request.StartPeriod,
+            request.EndPeriod,
             request.StartDate,
             request.EndDate,
             request.Capacity);
@@ -97,8 +97,8 @@ public sealed class CourseSectionService(
             SectionCode = normalizedSectionCode,
             Capacity = request.Capacity,
             DayOfWeek = request.DayOfWeek,
-            StartTime = request.StartTime,
-            EndTime = request.EndTime,
+            StartPeriod = request.StartPeriod,
+            EndPeriod = request.EndPeriod,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             Status = request.Status,
@@ -225,8 +225,8 @@ public sealed class CourseSectionService(
         }
 
         ValidateScheduleAndCapacity(
-            request.StartTime,
-            request.EndTime,
+            request.StartPeriod,
+            request.EndPeriod,
             request.StartDate,
             request.EndDate,
             request.Capacity);
@@ -252,8 +252,8 @@ public sealed class CourseSectionService(
 
         existing.Capacity = request.Capacity;
         existing.DayOfWeek = request.DayOfWeek;
-        existing.StartTime = request.StartTime;
-        existing.EndTime = request.EndTime;
+        existing.StartPeriod = request.StartPeriod;
+        existing.EndPeriod = request.EndPeriod;
         existing.StartDate = request.StartDate;
         existing.EndDate = request.EndDate;
         existing.Status = request.Status;
@@ -324,8 +324,8 @@ public sealed class CourseSectionService(
     }
 
     private static void ValidateScheduleAndCapacity(
-        TimeOnly startTime,
-        TimeOnly endTime,
+        ClassPeriod startPeriod,
+        ClassPeriod endPeriod,
         DateOnly startDate,
         DateOnly endDate,
         int capacity)
@@ -335,7 +335,9 @@ public sealed class CourseSectionService(
             throw new BadRequestException(InvalidCapacityMessage);
         }
 
-        if (startTime >= endTime)
+        if ((int)startPeriod < 1 || (int)startPeriod > 10 ||
+            (int)endPeriod < 1 || (int)endPeriod > 10 ||
+            startPeriod >= endPeriod)
         {
             throw new BadRequestException(InvalidTimeRangeMessage);
         }
@@ -371,8 +373,8 @@ public sealed class CourseSectionService(
         SectionCode = entity.SectionCode,
         Capacity = entity.Capacity,
         DayOfWeek = entity.DayOfWeek,
-        StartTime = entity.StartTime,
-        EndTime = entity.EndTime,
+        StartPeriod = entity.StartPeriod,
+        EndPeriod = entity.EndPeriod,
         StartDate = entity.StartDate,
         EndDate = entity.EndDate,
         Status = entity.Status,

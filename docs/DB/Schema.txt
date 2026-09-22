@@ -80,8 +80,8 @@ erDiagram
         varchar section_code
         int capacity
         enum day_of_week "MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY | SUNDAY"
-        time start_time
-        time end_time
+        int start_period
+        int end_period
         date start_date
         date end_date
         enum status "OPEN | COMPLETED | CANCELLED"

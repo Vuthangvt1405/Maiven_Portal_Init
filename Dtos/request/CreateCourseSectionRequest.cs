@@ -27,10 +27,14 @@ public sealed record CreateCourseSectionRequest
     public WeekDay DayOfWeek { get; set; }
 
     [Required]
-    public TimeOnly StartTime { get; set; }
+    [Range(1, 10)]
+    [EnumDataType(typeof(ClassPeriod))]
+    public ClassPeriod StartPeriod { get; set; }
 
     [Required]
-    public TimeOnly EndTime { get; set; }
+    [Range(1, 10)]
+    [EnumDataType(typeof(ClassPeriod))]
+    public ClassPeriod EndPeriod { get; set; }
 
     [Required]
     public DateOnly StartDate { get; set; }

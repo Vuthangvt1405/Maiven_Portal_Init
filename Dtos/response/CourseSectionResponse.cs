@@ -11,8 +11,8 @@ public sealed record CourseSectionResponse
     public string SectionCode { get; set; } = string.Empty;
     public int Capacity { get; set; }
     public WeekDay DayOfWeek { get; set; }
-    public TimeOnly StartTime { get; set; }
-    public TimeOnly EndTime { get; set; }
+    public ClassPeriod StartPeriod { get; set; }
+    public ClassPeriod EndPeriod { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
     public CourseSectionStatus Status { get; set; }

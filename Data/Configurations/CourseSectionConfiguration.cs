@@ -13,7 +13,9 @@ public class CourseSectionConfiguration : IEntityTypeConfiguration<CourseSection
             table.HasCheckConstraint("CK_COURSE_SECTIONS_day_of_week", "[day_of_week] IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY')");
             table.HasCheckConstraint("CK_COURSE_SECTIONS_status", "[status] IN ('OPEN', 'COMPLETED', 'CANCELLED')");
             table.HasCheckConstraint("CK_COURSE_SECTIONS_capacity", "[capacity] >= 0");
-            table.HasCheckConstraint("CK_COURSE_SECTIONS_time_range", "[start_time] < [end_time]");
+            table.HasCheckConstraint("CK_COURSE_SECTIONS_start_period", "[start_period] BETWEEN 1 AND 10");
+            table.HasCheckConstraint("CK_COURSE_SECTIONS_end_period", "[end_period] BETWEEN 1 AND 10");
+            table.HasCheckConstraint("CK_COURSE_SECTIONS_period_range", "[start_period] < [end_period]");
             table.HasCheckConstraint("CK_COURSE_SECTIONS_date_range", "[start_date] <= [end_date]");
         });
         builder.HasKey(x => x.Id);
@@ -24,8 +26,8 @@ public class CourseSectionConfiguration : IEntityTypeConfiguration<CourseSection
         builder.Property(x => x.SectionCode).HasColumnName("section_code").HasColumnType("varchar(50)").HasMaxLength(50).IsRequired();
         builder.Property(x => x.Capacity).HasColumnName("capacity").HasColumnType("int").IsRequired();
         builder.Property(x => x.DayOfWeek).HasColumnName("day_of_week").HasConversion<string>().HasColumnType("varchar(10)").HasMaxLength(10).IsRequired();
-        builder.Property(x => x.StartTime).HasColumnName("start_time").HasColumnType("time").IsRequired();
-        builder.Property(x => x.EndTime).HasColumnName("end_time").HasColumnType("time").IsRequired();
+        builder.Property(x => x.StartPeriod).HasColumnName("start_period").HasColumnType("int").IsRequired();
+        builder.Property(x => x.EndPeriod).HasColumnName("end_period").HasColumnType("int").IsRequired();
         builder.Property(x => x.StartDate).HasColumnName("start_date").HasColumnType("date").IsRequired();
         builder.Property(x => x.EndDate).HasColumnName("end_date").HasColumnType("date").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().HasColumnType("varchar(10)").HasMaxLength(10).IsRequired();
