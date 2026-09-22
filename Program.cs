@@ -61,6 +61,8 @@ builder.Services.AddScoped<CourseSectionRepository>();
 builder.Services.AddScoped<EnrollmentRepository>();
 builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<AnnouncementRepository>();
+builder.Services.AddScoped<CourseResultRepository>();
+
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TeacherService>();
@@ -70,6 +72,8 @@ builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<CourseSectionService>();
 builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<AnnouncementService>();
+builder.Services.AddScoped<CourseResultService>();
+
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
