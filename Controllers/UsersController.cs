@@ -1,10 +1,11 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
+using Maiven_Portal_Managment.Dtos.request;
+using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 namespace Maiven_Portal_Managment.Controllers;
 
 [ApiController]
@@ -19,11 +20,25 @@ public sealed class UsersController(UserService userService) : ControllerBase
         return Ok(response);
     }
 
-    [HttpGet()]
-    public async Task<ActionResult<IReadOnlyList<UserProfileResponse>>> GetAllUser(CancellationToken cancellationToken)
+    [HttpGet("/api/admin/users")]
+    public async Task<ActionResult<PagedResponse<UserProfileResponse>>> GetAllUser(
+        [FromQuery] UserQueryParameters parameters,
+        CancellationToken cancellationToken)
     {
-        var response = await userService.GetAllUserAsync(cancellationToken);
-        return Ok(response);
+        var result = await userService.GetPagedUsersAsync(parameters, cancellationToken);
+        var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
+      var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
+
+        var response = new PagedResponse<UserProfileResponse>
+        {
+         Items = result.Items,
+        PageNumber = pageNumber,
+         PageSize = pageSize,
+         TotalItems = result.TotalItems,
+        TotalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize)
+        };
+
+         return Ok(response);
     }
 
     [HttpGet("/api/admin/users/{userId:long}")]

@@ -1,7 +1,10 @@
+using log4net;
 using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos.Request;
+using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
+using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Repository;
 using Maiven_Portal_Managment.Services.Security;
 
@@ -11,6 +14,8 @@ public sealed class UserService(
     UserRepository userRepository,
     CurrentUserContext currentUserContext)
 {
+    private static readonly ILog Logger = LogManager.GetLogger(typeof(UserService));
+
     public CurrentUserResponse GetCurrentUser()
     {
         if (!currentUserContext.IsAuthenticated ||
@@ -29,6 +34,9 @@ public sealed class UserService(
             Role = currentUserContext.Role,
             RoleUserId = roleUserId
         };
+        Logger.Info(
+            $"Current user retrieved UserId={response.Id} " +
+            $"Role={LogFormat.FormatValue(response.Role)}");
         return response;
     }
 
@@ -38,6 +46,7 @@ public sealed class UserService(
         var users = await userRepository.GetAllAsync(cancellationToken);
 
         var response = users.Select(ToUserProfileResponse).ToArray();
+        Logger.Info($"Users retrieved ResultCount={response.Length}");
         return response;
     }
 
@@ -53,6 +62,10 @@ public sealed class UserService(
         }
 
         var response = ToUserProfileResponse(user);
+        Logger.Info(
+            $"User retrieved UserId={response.Id} " +
+            $"Email={LogFormat.FormatValue(response.Email)} " +
+            $"Role={LogFormat.FormatValue(response.Role)}");
         return response;
     }
 
@@ -68,6 +81,7 @@ public sealed class UserService(
         }
 
         await userRepository.DeleteByIdAsync(userId, cancellationToken);
+        Logger.Info($"User soft-deleted UserId={userId}");
     }
 
     public async Task<UserProfileResponse> UpdateCurrentUserProfileAsync(
@@ -98,7 +112,35 @@ public sealed class UserService(
         await userRepository.SaveChangesAsync(cancellationToken);
 
         var response = ToUserProfileResponse(user);
+        Logger.Info(
+            $"User profile updated UserId={response.Id} " +
+            $"Email={LogFormat.FormatValue(response.Email)}");
         return response;
+    }
+
+    public async Task<(IReadOnlyList<UserProfileResponse> Items, int TotalItems)> GetPagedUsersAsync(
+        UserQueryParameters parameters,
+         CancellationToken cancellationToken)
+    {
+        var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
+        var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
+
+        var result = await userRepository.GetPagedAsync(
+            parameters.Name,
+            parameters.Email,
+            parameters.Role,
+            pageNumber,
+            pageSize,
+            cancellationToken);
+
+        var items = result.Items.Select(ToUserProfileResponse).ToArray();
+        Logger.Info(
+            $"Users searched Name={LogFormat.FormatValue(parameters.Name ?? string.Empty)} " +
+            $"Email={LogFormat.FormatValue(parameters.Email ?? string.Empty)} " +
+            $"Role={LogFormat.FormatValue(parameters.Role?.ToString() ?? string.Empty)} " +
+            $"PageNumber={pageNumber} PageSize={pageSize} " +
+            $"ResultCount={items.Length} TotalItems={result.TotalItems}");
+        return (items, result.TotalItems);
     }
 
     private static UserProfileResponse ToUserProfileResponse(User user)

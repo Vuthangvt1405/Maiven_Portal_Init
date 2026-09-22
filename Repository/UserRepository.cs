@@ -1,7 +1,7 @@
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
 using Microsoft.EntityFrameworkCore;
-
+using Maiven_Portal_Managment.Models.Enums;
 namespace Maiven_Portal_Managment.Repository;
 
 public sealed class UserRepository(AppDbContext dbContext)
@@ -45,6 +45,51 @@ public sealed class UserRepository(AppDbContext dbContext)
             .SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
         return user;
+    }
+
+    public async Task<(IReadOnlyList<User> Items, int TotalItems)> GetPagedAsync(
+        string? name,
+        string? email,
+        UserRoleFilter? role,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = dbContext.Users
+            .AsNoTracking()
+            .Include(user => user.UserRoles)
+            .ThenInclude(userRole => userRole.Role)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            name = name.Trim();
+            query = query.Where(user =>
+            user.FullName.Contains(name));
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            email = email.Trim();
+            query = query.Where(user =>
+            user.Email.Contains(email));
+        }
+
+        if (role.HasValue)
+        {
+            var roleValue = role.Value.ToString();
+            query = query.Where(user =>
+            user.UserRoles.Any(userRole => userRole.Role.Code == roleValue));
+        }
+
+        var totalItems = await query.CountAsync(cancellationToken);
+        var users = await query
+            .OrderBy(user => user.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+    return (users, totalItems);
     }
 
     public async Task DeleteByIdAsync(
