@@ -71,6 +71,14 @@ builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -96,6 +104,8 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 // Keep exception handling inside the request logger so it can catch failures
 // from all downstream middleware.
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+app.UseCors("AllowAll");
 
 if (app.Environment.IsDevelopment())
 {
