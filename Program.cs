@@ -60,6 +60,7 @@ builder.Services.AddScoped<AcademicYearRepository>();
 builder.Services.AddScoped<SemesterRepository>();
 builder.Services.AddScoped<CourseSectionRepository>();
 builder.Services.AddScoped<EnrollmentRepository>();
+builder.Services.AddScoped<GradeComponentRepository>();
 builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<AnnouncementRepository>();
 builder.Services.AddScoped<CourseResultRepository>();
@@ -72,6 +73,7 @@ builder.Services.AddScoped<AcademicYearService>();
 builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<CourseSectionService>();
 builder.Services.AddScoped<EnrollmentService>();
+builder.Services.AddScoped<GradeComponentService>();
 builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<CourseResultService>();
 

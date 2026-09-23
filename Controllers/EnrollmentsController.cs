@@ -1,7 +1,8 @@
-using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Dtos.request;
 using Maiven_Portal_Managment.Dtos.response;
+using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Services;
+using Maiven_Portal_Managment.Services.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,8 +10,10 @@ namespace Maiven_Portal_Managment.Controllers;
 
 [ApiController]
 [Route("api/enrollment")]
-// [Authorize(Roles = SystemRoles.Admin.Code)]
-public sealed class EnrollmentsController(EnrollmentService enrollmentService) : ControllerBase
+[Authorize]
+public sealed class EnrollmentsController(
+    EnrollmentService enrollmentService,
+    CurrentUserContext currentUserContext) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResponse<EnrollmentResponse>>> GetAll(
@@ -33,7 +36,9 @@ public sealed class EnrollmentsController(EnrollmentService enrollmentService) :
     [HttpPost]
     public async Task<ActionResult<EnrollmentResponse>> Create(CreateEnrollmentRequest request, CancellationToken cancellationToken)
     {
-        var response = await enrollmentService.CreateAsync(request, cancellationToken);
+        var userId = currentUserContext.UserId
+            ?? throw new UnauthorizedException("The authenticated user could not be identified.");
+        var response = await enrollmentService.CreateAsync(userId, request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { enrollmentId = response.Id }, response);
     }
 
@@ -42,7 +47,9 @@ public sealed class EnrollmentsController(EnrollmentService enrollmentService) :
         CreateEnrollmentsRequest request,
         CancellationToken cancellationToken)
     {
-        return Ok(await enrollmentService.CreateBatchAsync(request, cancellationToken));
+        var userId = currentUserContext.UserId
+            ?? throw new UnauthorizedException("The authenticated user could not be identified.");
+        return Ok(await enrollmentService.CreateBatchAsync(userId, request, cancellationToken));
     }
 
     [HttpPut("{enrollmentId:long}")]

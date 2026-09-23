@@ -1,5 +1,6 @@
 using Maiven_Portal_Managment.Data;
 using Maiven_Portal_Managment.Data.Entities;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 using Maiven_Portal_Managment.Dtos.request;
 using Microsoft.EntityFrameworkCore;
 
@@ -112,6 +113,22 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
                 return CreateResult.Conflict;
             }
 
+            var hasScheduleOverlap = await dbContext.Enrollments
+                .AnyAsync(enrollment =>
+                    enrollment.StudentUserRoleId == entity.StudentUserRoleId &&
+                    enrollment.SectionId != entity.SectionId &&
+                    enrollment.Section.SemesterId == section.SemesterId &&
+                    enrollment.Section.DayOfWeek == section.DayOfWeek &&
+                    section.StartPeriod < enrollment.Section.EndPeriod &&
+                    section.EndPeriod > enrollment.Section.StartPeriod,
+                    cancellationToken);
+
+            if (hasScheduleOverlap)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return CreateResult.Conflict;
+            }
+
             dbContext.Enrollments.Add(entity);
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -123,6 +140,37 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
                 await transaction.RollbackAsync(cancellationToken);
                 return CreateResult.Conflict;
             }
+
+            var components = await dbContext.GradeComponents
+                .Where(x => x.SectionId == entity.SectionId)
+                .OrderBy(x => x.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var component in components)
+            {
+                dbContext.StudentScores.Add(new StudentScore
+                {
+                    EnrollmentId = entity.Id,
+                    ComponentId = component.Id,
+                    Score = 0m,
+                    UpdatedById = -1,
+                    IsDeleted = false,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+            
+            dbContext.CourseResults.Add(new CourseResult
+            {
+                EnrollmentId = entity.Id,
+                FinalScore = 0m,
+                GradePoint = 0m,
+                ResultStatus = ResultStatus.INCOMPLETE,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            await dbContext.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
             return CreateResult.Success;

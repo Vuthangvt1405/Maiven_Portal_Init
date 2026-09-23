@@ -19,10 +19,14 @@ public sealed class EnrollmentService(EnrollmentRepository repository)
         ToResponse(await repository.GetByIdAsync(id, cancellationToken) ??
             throw new NotFoundException("The enrollment could not be found."));
 
-    public Task<EnrollmentResponse> CreateAsync(CreateEnrollmentRequest request, CancellationToken cancellationToken) =>
-        CreateOneAsync(request, cancellationToken);
+    public Task<EnrollmentResponse> CreateAsync(
+        long userId,
+        CreateEnrollmentRequest request,
+        CancellationToken cancellationToken) =>
+        CreateOneAsync(userId, request, cancellationToken);
 
     public async Task<EnrollmentBatchResponse> CreateBatchAsync(
+        long userId,
         CreateEnrollmentsRequest request,
         CancellationToken cancellationToken)
     {
@@ -34,20 +38,20 @@ public sealed class EnrollmentService(EnrollmentRepository repository)
         {
             try
             {
-                var enrollment = await CreateOneAsync(item, cancellationToken);
-                results.Add(new(item.UserId, item.SectionId, "success", null, enrollment));
+                var enrollment = await CreateOneAsync(userId, item, cancellationToken);
+                results.Add(new(userId, item.SectionId, "success", null, enrollment));
             }
             catch (ConflictException exception)
             {
-                results.Add(new(item.UserId, item.SectionId, "failed", exception.Message, null));
+                results.Add(new(userId, item.SectionId, "failed", exception.Message, null));
             }
             catch (NotFoundException exception)
             {
-                results.Add(new(item.UserId, item.SectionId, "failed", exception.Message, null));
+                results.Add(new(userId, item.SectionId, "failed", exception.Message, null));
             }
             catch (BadRequestException exception)
             {
-                results.Add(new(item.UserId, item.SectionId, "failed", exception.Message, null));
+                results.Add(new(userId, item.SectionId, "failed", exception.Message, null));
             }
         }
 
@@ -64,13 +68,14 @@ public sealed class EnrollmentService(EnrollmentRepository repository)
     }
 
     private async Task<EnrollmentResponse> CreateOneAsync(
+        long userId,
         CreateEnrollmentRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.UserId <= 0 || request.SectionId <= 0)
+        if (userId <= 0 || request.SectionId <= 0)
             throw new BadRequestException("UserId and SectionId must be positive numbers.");
 
-        var studentRole = await repository.GetStudentRoleAsync(request.UserId, cancellationToken)
+        var studentRole = await repository.GetStudentRoleAsync(userId, cancellationToken)
             ?? throw new NotFoundException("The specified student could not be found.");
 
         var entity = new Enrollment
