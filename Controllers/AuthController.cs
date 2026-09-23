@@ -39,4 +39,15 @@ public sealed class AuthController(AuthService authService) : ControllerBase
         var response = await authService.LoginAdminAsync(request, cancellationToken);
         return Ok(response);
     }
+
+    [AllowAnonymous]
+    [HttpPost(face-login)]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<AuthResponse>> FaceLogin(
+        [FromForm] List<IFormFile> request,
+        CancellationToken cancellationToken)
+    {
+        var response = await FaceService.FaceLoginAsync(request, cancellationToken);
+        return Ok(response);
+    }
 }
