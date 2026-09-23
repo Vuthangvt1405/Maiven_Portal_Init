@@ -26,15 +26,8 @@ public sealed class CourseService(
         CreateCourseRequest request,
         CancellationToken cancellationToken)
     {
-        var entity = BuildEntity(
-            request.CourseCode,
-            request.CourseName,
-            request.Credits,
-            request.Description,
-            request.Status);
-
         var existingCourse = await courseRepository.GetByCourseCodeAsync(
-            entity.CourseCode,
+            request.CourseCode,
             cancellationToken);
 
         if (existingCourse is not null)
@@ -42,26 +35,20 @@ public sealed class CourseService(
             throw new ConflictException(DuplicateCodeMessage);
         }
 
-        try
-        {
-            var created = await courseRepository.AddAsync(
-                entity,
-                cancellationToken);
+        var entity = BuildEntity(
+            request.CourseCode,
+            request.CourseName,
+            request.Credits,
+            request.Description ?? string.Empty,
+            ActiveStatus.ACTIVE
+           );
 
-            var response = ToResponse(created);
-            return response;
-        }
-        catch (DbUpdateException exception)
-        {
-            var conflict = TranslateUniqueConstraintException(exception);
+        var created = await courseRepository.AddAsync(
+            entity,
+            cancellationToken);
 
-            if (conflict is not null)
-            {
-                throw conflict;
-            }
-
-            throw;
-        }
+        var response = ToResponse(created);
+        return response;
     }
 
     public async Task<(IReadOnlyList<CourseResponse> Items, int TotalItems)> GetPagedAsync(
@@ -125,32 +112,16 @@ public sealed class CourseService(
                 "The course could not be found.");
         }
 
-        ValidateUpdateRequest(request);
-
         existing.CourseName = request.CourseName.Trim();
         existing.Credits = request.Credits;
         existing.Description = request.Description?.Trim();
         existing.Status = request.Status;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        try
-        {
-            await courseRepository.SaveChangesAsync(cancellationToken);
+        await courseRepository.SaveChangesAsync(cancellationToken);
 
-            var response = ToResponse(existing);
-            return response;
-        }
-        catch (DbUpdateException exception)
-        {
-            var conflict = TranslateUniqueConstraintException(exception);
-
-            if (conflict is not null)
-            {
-                throw conflict;
-            }
-
-            throw;
-        }
+        var response = ToResponse(existing);
+        return response;
     }
 
     public async Task DeleteAsync(
@@ -169,132 +140,39 @@ public sealed class CourseService(
     }
 
     private static Course BuildEntity(
-        string? courseCode,
-        string? courseName,
-        int? credits,
-        string? description,
-        ActiveStatus? status)
+        string courseCode,
+        string courseName,
+        int credits,
+        string description,
+        ActiveStatus status)
     {
         var normalizedCourseCode = courseCode?.Trim() ?? string.Empty;
         var normalizedCourseName = courseName?.Trim() ?? string.Empty;
-
-        if (normalizedCourseCode.Length is < 1 or > 20)
-        {
-            throw new BadRequestException(
-                "Course code must contain between 1 and 20 characters after trimming.");
-        }
-
-        if (normalizedCourseName.Length is < 1 or > 200)
-        {
-            throw new BadRequestException(
-                "Course name must contain between 1 and 200 characters after trimming.");
-        }
-
-        if (!credits.HasValue)
-        {
-            throw new BadRequestException(
-                "Credits is required.");
-        }
-
-        if (credits.Value <= 0)
-        {
-            throw new BadRequestException(
-                InvalidCreditsMessage);
-        }
-
-        if (!status.HasValue)
-        {
-            throw new BadRequestException(
-                "Status is required.");
-        }
-
-        if (!Enum.IsDefined(status.Value))
-        {
-            throw new BadRequestException(
-                InvalidStatusMessage);
-        }
 
         return new Course
         {
             CourseCode = normalizedCourseCode,
             CourseName = normalizedCourseName,
-            Credits = credits.Value,
+            Credits = credits,
             Description = description?.Trim(),
-            Status = status.Value,
+            Status = status,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
     }
 
-    private static void ValidateUpdateRequest(
-        UpdateCourseRequest request)
-    {
-        var courseName = request.CourseName?.Trim();
 
-        if (string.IsNullOrWhiteSpace(courseName))
-        {
-            throw new BadRequestException(
-                "Course name is required.");
-        }
-
-        if (courseName.Length > 200)
-        {
-            throw new BadRequestException(
-                "Course name must not exceed 200 characters.");
-        }
-
-
-        if (request.Credits <= 0)
-        {
-            throw new BadRequestException(
-                InvalidCreditsMessage);
-        }
-
-        
-
-        if (!Enum.IsDefined(request.Status))
-        {
-            throw new BadRequestException(
-                InvalidStatusMessage);
-        }
-    }
-
-    private static ConflictException? TranslateUniqueConstraintException(
-        DbUpdateException exception)
-    {
-        if (exception.GetBaseException() is not SqlException sqlException ||
-            sqlException.Number is not (2601 or 2627))
-        {
-            return null;
-        }
-
-        if (sqlException.Message.Contains(
-                "UX_COURSES_course_code_not_deleted",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return new ConflictException(
-                DuplicateCodeMessage,
-                exception);
-        }
-
-        return new ConflictException(
-            "The course conflicts with an existing record.",
-            exception);
-    }
-
-    private static CourseResponse ToResponse(
-        Course entity) => new()
-        {
-            Id = entity.Id,
-            CourseCode = entity.CourseCode,
-            CourseName = entity.CourseName,
-            Credits = entity.Credits,
-            Description = entity.Description,
-            Status = entity.Status,
-            CreatedAt = AsUtc(entity.CreatedAt),
-            UpdatedAt = AsUtc(entity.UpdatedAt)
-        };
+    private static CourseResponse ToResponse(Course entity) => new(
+        Id: entity.Id,
+        CourseCode: entity.CourseCode,
+        CourseName: entity.CourseName,
+        Credits: entity.Credits,
+        Description: entity.Description,
+        Status: entity.Status,
+        CreatedAt: AsUtc(entity.CreatedAt),
+        UpdatedAt: AsUtc(entity.UpdatedAt)
+    );
 
     private static DateTime AsUtc(DateTime value) => value.Kind switch
     {

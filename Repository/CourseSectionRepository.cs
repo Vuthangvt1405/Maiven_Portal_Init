@@ -147,9 +147,9 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
     {
         var query = dbContext.CourseSections
             .AsNoTracking()
-            .Where(s => !s.IsDeleted && s.Enrollments.Any(e => !e.IsDeleted
-                                                            && e.StudentUserRoleId == studentUserRoleId
-                                                            && !e.StudentUserRole.IsDeleted));
+            .Where(s => !s.IsDeleted &&
+                            s.Enrollments.Any(e => !e.IsDeleted
+                                     && e.StudentUserRoleId == studentUserRoleId));
 
         return await ApplyFiltersAndPagingAsync(
             query,

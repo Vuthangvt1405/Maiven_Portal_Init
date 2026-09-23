@@ -75,7 +75,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         }
 
         var result = await courseSectionService.TeacherGetPagedAsync(
-            teacherUserRoleId,
+            teacherUserRoleId.Value,
             parameters,
             cancellationToken);
 
@@ -136,7 +136,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         }
 
         var result = await courseSectionService.StudentGetPagedAsync(
-            studentUserRoleId,
+            studentUserRoleId.Value,
             parameters,
             cancellationToken);
 
@@ -170,7 +170,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         }
 
         var result = await courseSectionService.StudentGetResultsAsync(
-            studentUserRoleId,
+            studentUserRoleId.Value,
             parameters,
             cancellationToken);
 
