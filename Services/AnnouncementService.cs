@@ -1,4 +1,5 @@
 using Maiven_Portal_Managment.Dtos.request;
+using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Common;
@@ -15,8 +16,10 @@ public sealed class AnnouncementService(
     public async Task<AnnouncementResponse> CreateAsync(CreateAnnouncementRequest request, CancellationToken cancellationToken)
     {
         var entity = BuildEntity(GetCurrentUserId(), request.SectionId, request.Title, request.Content);
-        var response = ToResponse(await announcementRepository.AddAsync(entity, cancellationToken));
-        return response;
+        var created = await announcementRepository.AddAsync(entity, cancellationToken);
+        var announcement = await announcementRepository.GetByIdAsync(created.Id, cancellationToken)
+            ?? throw new NotFoundException("The announcement could not be found after creation.");
+        return ToResponse(announcement);
     }
 
     public async Task<(IReadOnlyList<AnnouncementResponse> Items, int TotalItems)> GetPagedAsync(
@@ -112,10 +115,30 @@ public sealed class AnnouncementService(
     {
         Id = entity.Id,
         CreatedById = entity.CreatedById,
+        User = ToUserResponse(entity.CreatedBy),
         SectionId = entity.SectionId,
         Title = entity.Title,
         Content = entity.Content,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
     };
+
+    private static AuthUserResponse ToUserResponse(User user)
+    {
+        var userRole = user.UserRoles.FirstOrDefault();
+
+        return new AuthUserResponse
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+            DateOfBirth = user.DateOfBirth,
+            Gender = user.Gender,
+            Phone = user.Phone,
+            Address = user.Address,
+            AvatarUrl = user.AvatarUrl,
+            Role = userRole?.Role.Code ?? string.Empty,
+            RoleUserId = userRole?.Id ?? 0
+        };
+    }
 }

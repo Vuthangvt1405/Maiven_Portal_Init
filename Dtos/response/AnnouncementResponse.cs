@@ -1,9 +1,12 @@
 namespace Maiven_Portal_Managment.Dtos.response;
 
+using Maiven_Portal_Managment.Dtos.Response;
+
 public sealed class AnnouncementResponse
 {
     public long Id { get; set; }
     public long CreatedById { get; set; }
+    public AuthUserResponse User { get; set; } = new();
     public long? SectionId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;

@@ -10,6 +10,9 @@ public sealed class AnnouncementRepository(AppDbContext dbContext)
     {
         var entity = await dbContext.Announcements
             .AsNoTracking()
+            .Include(announcement => announcement.CreatedBy)
+                .ThenInclude(user => user.UserRoles)
+                    .ThenInclude(userRole => userRole.Role)
             .SingleOrDefaultAsync(announcement => announcement.Id == announcementId, cancellationToken);
         return entity;
     }
@@ -21,7 +24,12 @@ public sealed class AnnouncementRepository(AppDbContext dbContext)
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var query = dbContext.Announcements.AsNoTracking();
+        var query = dbContext.Announcements
+            .AsNoTracking()
+            .Include(announcement => announcement.CreatedBy)
+                .ThenInclude(user => user.UserRoles)
+                    .ThenInclude(userRole => userRole.Role)
+            .AsQueryable();
 
         if (sectionId.HasValue)
         {
@@ -47,6 +55,9 @@ public sealed class AnnouncementRepository(AppDbContext dbContext)
     public async Task<Announcement?> GetTrackedByIdAsync(long announcementId, CancellationToken cancellationToken)
     {
         var entity = await dbContext.Announcements
+            .Include(announcement => announcement.CreatedBy)
+                .ThenInclude(user => user.UserRoles)
+                    .ThenInclude(userRole => userRole.Role)
             .SingleOrDefaultAsync(announcement => announcement.Id == announcementId, cancellationToken);
         return entity;
     }
