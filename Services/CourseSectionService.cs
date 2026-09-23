@@ -45,8 +45,8 @@ public sealed class CourseSectionService(
             SectionCode = request.SectionCode.Trim(),
             Capacity = request.Capacity,
             DayOfWeek = request.DayOfWeek,
-            StartPeriod = request.StartPeriod,
-            EndPeriod = request.EndPeriod,
+            StartPeriod = (ClassPeriod)request.StartPeriod,
+            EndPeriod = (ClassPeriod)request.EndPeriod,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             Status = request.Status,
@@ -89,8 +89,8 @@ public sealed class CourseSectionService(
 
         existing.Capacity = request.Capacity;
         existing.DayOfWeek = request.DayOfWeek;
-        existing.StartPeriod = request.StartPeriod;
-        existing.EndPeriod = request.EndPeriod;
+        existing.StartPeriod = (ClassPeriod)request.StartPeriod;
+        existing.EndPeriod = (ClassPeriod)request.EndPeriod;
         existing.StartDate = request.StartDate;
         existing.EndDate = request.EndDate;
         existing.Status = request.Status;
@@ -345,8 +345,8 @@ public sealed class CourseSectionService(
     entity.SectionCode,
     entity.Capacity,
     entity.DayOfWeek,
-    entity.StartPeriod,
-    entity.EndPeriod,
+    (int)entity.StartPeriod,
+    (int)entity.EndPeriod,
     entity.StartDate,
     entity.EndDate,
     entity.Status,
