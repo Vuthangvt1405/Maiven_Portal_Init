@@ -101,9 +101,9 @@ public sealed class CourseSectionService(
         return ToResponse(existing);
     }
 
-    public async Task<(IReadOnlyList<CourseSectionResponse> Items, int TotalItems)> GetPagedAsync(
-        CourseSectionQueryParameters parameters,
-        CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<CourseSectionWithEnrollmentCount> Items, int TotalItems)> GetPagedAsync(
+    CourseSectionQueryParameters parameters,
+    CancellationToken cancellationToken)
     {
         var pageNumber = parameters.PageNumber < 1 ? 1 : parameters.PageNumber;
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
@@ -120,7 +120,23 @@ public sealed class CourseSectionService(
             cancellationToken);
 
         var items = result.Items
-            .Select(ToResponse)
+            .Select(x => new CourseSectionWithEnrollmentCount(
+                x.Section.Id,
+                x.Section.CourseId,
+                x.Section.SemesterId,
+                x.Section.TeacherUserRoleId,
+                x.Section.SectionCode,
+                x.Section.Capacity,
+                x.Section.DayOfWeek,
+                (int)x.Section.StartPeriod,
+                (int)x.Section.EndPeriod,
+                x.EnrollmentCount,
+                x.Section.StartDate,
+                x.Section.EndDate,
+                x.Section.Status,
+                AsUtc(x.Section.CreatedAt),
+                AsUtc(x.Section.UpdatedAt)
+            ))
             .ToArray();
 
         return (items, result.TotalItems);
