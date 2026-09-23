@@ -14,8 +14,8 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
 {
 
     [HttpGet("course-sections")]
-    [ProducesResponseType<PagedResponse<CourseSectionResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> GetAll(
+    [ProducesResponseType<PagedResponse<CourseSectionWithEnrollmentCount>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<CourseSectionWithEnrollmentCount>>> GetAll(
         [FromQuery] CourseSectionQueryParameters parameters,
         CancellationToken cancellationToken)
     {
@@ -25,7 +25,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
         var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
 
-        var response = new PagedResponse<CourseSectionResponse>
+        var response = new PagedResponse<CourseSectionWithEnrollmentCount>
         {
             Items = result.Items,
             PageNumber = pageNumber,

@@ -51,16 +51,16 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         return entity;
     }
 
-    public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedAsync(
-        long? courseId,
-        long? semesterId,
-        long? teacherUserRoleId,
-        string? sectionCode,
-        WeekDay? dayOfWeek,
-        CourseSectionStatus? status,
-        int pageNumber,
-        int pageSize,
-        CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<(CourseSection Section, int EnrollmentCount)> Items, int TotalItems)> GetPagedAsync(
+    long? courseId,
+    long? semesterId,
+    long? teacherUserRoleId,
+    string? sectionCode,
+    WeekDay? dayOfWeek,
+    CourseSectionStatus? status,
+    int pageNumber,
+    int pageSize,
+    CancellationToken cancellationToken)
     {
         var query = dbContext.CourseSections
             .AsNoTracking()
@@ -98,13 +98,22 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
 
         var totalItems = await query.CountAsync(cancellationToken);
 
-        var entities = await query
+        var rawItems = await query
             .OrderBy(s => s.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .Select(s => new
+            {
+                Section = s,
+                EnrollmentCount = s.Enrollments.Count(e => !e.IsDeleted)
+            })
             .ToListAsync(cancellationToken);
 
-        return (entities, totalItems);
+        var items = rawItems
+            .Select(x => (x.Section, x.EnrollmentCount))
+            .ToList();
+
+        return (items, totalItems);
     }
 
     public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedForTeacherAsync(
