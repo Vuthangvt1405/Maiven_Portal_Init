@@ -59,11 +59,13 @@ builder.Services.AddScoped<UserRoleRepository>();
 builder.Services.AddScoped<AcademicYearRepository>();
 builder.Services.AddScoped<SemesterRepository>();
 builder.Services.AddScoped<CourseSectionRepository>();
+builder.Services.AddScoped<StudentScoreRepository>();
 builder.Services.AddScoped<EnrollmentRepository>();
 builder.Services.AddScoped<GradeComponentRepository>();
 builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<AnnouncementRepository>();
 builder.Services.AddScoped<CourseResultRepository>();
+builder.Services.AddScoped<RegistrationPeriodRepository>();
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
@@ -72,10 +74,12 @@ builder.Services.AddScoped<SemesterService>();
 builder.Services.AddScoped<AcademicYearService>();
 builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<CourseSectionService>();
+builder.Services.AddScoped<StudentScoreService>();
 builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<GradeComponentService>();
 builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<CourseResultService>();
+builder.Services.AddScoped<RegistrationPeriodService>();
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -118,7 +122,6 @@ app.UseCors("AllowAll");
 
 if (app.Environment.IsDevelopment())
 {
-    
 }
 app.UseSwagger();
 app.UseSwaggerUI();

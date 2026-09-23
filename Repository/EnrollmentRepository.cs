@@ -158,7 +158,7 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
                     UpdatedAt = DateTime.UtcNow
                 });
             }
-            
+
             dbContext.CourseResults.Add(new CourseResult
             {
                 EnrollmentId = entity.Id,

@@ -1,5 +1,7 @@
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
+using Maiven_Portal_Managment.Dtos.request;
+using Maiven_Portal_Managment.Dtos.response;
 using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,8 +11,10 @@ namespace Maiven_Portal_Managment.Controllers;
 
 [ApiController]
 [Route("api/teachers")]
-[Authorize(Roles = SystemRoles.Admin.Code)]
-public sealed class TeachersController(TeacherService teacherService) : ControllerBase
+[Authorize(Roles = SystemRoles.Teacher.Code)]
+public sealed class TeachersController(
+    TeacherService teacherService,
+    StudentScoreService studentScoreService) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<AuthUserResponse>> Create(
@@ -19,5 +23,20 @@ public sealed class TeachersController(TeacherService teacherService) : Controll
     {
         var response = await teacherService.CreateTeacherAsync(request, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    [Authorize(Roles = SystemRoles.Teacher.Code)]
+    [HttpPatch("/api/teachers/studentScores/{studentScoreId:long}")]
+    public async Task<ActionResult<StudentScoreResponse>> UpdateStudentScore(
+        long studentScoreId,
+        [FromBody] UpdateStudentScoreRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await studentScoreService.UpdateAsync(
+            studentScoreId,
+            request,
+            cancellationToken);
+
+        return Ok(response);
     }
 }
