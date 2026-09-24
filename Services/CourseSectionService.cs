@@ -291,6 +291,7 @@ public sealed class CourseSectionService(
             enrollment.StudentScores
                 .Where(score => !score.IsDeleted)
                 .Select(score => new StudentScoreDetailResponse(
+                    score.Id,
                     score.ComponentId,
                     score.Component.Name,
                     score.Component.Weight,

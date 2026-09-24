@@ -17,6 +17,7 @@ public sealed record StudentInCourseSectionResponse(
 );
 
 public sealed record StudentScoreDetailResponse(
+    long ScoreId,
     long ComponentId,
     string ComponentName,
     decimal Weight,
