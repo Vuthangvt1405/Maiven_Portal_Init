@@ -98,6 +98,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlFilePath = Path.Combine(AppContext.BaseDirectory, xmlFileName);
+    options.IncludeXmlComments(xmlFilePath);
+
     options.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.Http,

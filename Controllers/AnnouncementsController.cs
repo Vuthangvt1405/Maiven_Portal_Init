@@ -11,6 +11,7 @@ namespace Maiven_Portal_Managment.Controllers;
 [Route("api/announcements")]
 public sealed class AnnouncementsController(AnnouncementService announcementService) : ControllerBase
 {
+    /// <summary>Creates an announcement.</summary>
     [HttpPost]
     [Authorize(Roles = SystemRoles.Admin.Code + "," + SystemRoles.Teacher.Code)]
     [ProducesResponseType<AnnouncementResponse>(StatusCodes.Status201Created)]
@@ -22,6 +23,7 @@ public sealed class AnnouncementsController(AnnouncementService announcementServ
         return CreatedAtAction(nameof(GetById), new { announcementId = response.Id }, response);
     }
 
+    /// <summary>Retrieves a paginated list of announcements.</summary>
     [HttpGet]
     [ProducesResponseType<PagedResponse<AnnouncementResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<AnnouncementResponse>>> GetAll(
@@ -46,6 +48,7 @@ public sealed class AnnouncementsController(AnnouncementService announcementServ
         });
     }
 
+    /// <summary>Retrieves an announcement by ID.</summary>
     [HttpGet("{announcementId:long}")]
     [ProducesResponseType<AnnouncementResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<AnnouncementResponse>> GetById(
@@ -55,6 +58,7 @@ public sealed class AnnouncementsController(AnnouncementService announcementServ
         return Ok(await announcementService.GetByIdAsync(announcementId, cancellationToken));
     }
 
+    /// <summary>Updates an announcement.</summary>
     [HttpPut("{announcementId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code + "," + SystemRoles.Teacher.Code)]
     public async Task<ActionResult<AnnouncementResponse>> Update(

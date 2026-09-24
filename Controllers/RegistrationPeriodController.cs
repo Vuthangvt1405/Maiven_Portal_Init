@@ -13,6 +13,7 @@ namespace Maiven_Portal_Managment.Controllers;
 [Route("api/registrationPeriods")]
 public sealed class RegistrationPeriodController(RegistrationPeriodService registrationPeriodService) : ControllerBase
 {
+    /// <summary>Creates a registration period.</summary>
     [HttpPost]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<RegistrationPeriodResponse>> Create(
@@ -31,6 +32,7 @@ public sealed class RegistrationPeriodController(RegistrationPeriodService regis
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    /// <summary>Retrieves registration periods.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<RegistrationPeriodResponse>>> GetAll(
         [FromQuery] RegistrationPeriodQueryParameters parameters,
@@ -40,6 +42,7 @@ public sealed class RegistrationPeriodController(RegistrationPeriodService regis
         return Ok(result);
     }
 
+    /// <summary>Updates a registration period.</summary>
     [HttpPut("{registrationPeriodId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<RegistrationPeriodResponse>> Update(

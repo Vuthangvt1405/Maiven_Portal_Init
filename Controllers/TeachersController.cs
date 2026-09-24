@@ -16,6 +16,7 @@ public sealed class TeachersController(
     TeacherService teacherService,
     StudentScoreService studentScoreService) : ControllerBase
 {
+    /// <summary>Creates a teacher account.</summary>
     [HttpPost]
     public async Task<ActionResult<AuthUserResponse>> Create(
         [FromBody] CreateTeacherRequest request,
@@ -25,6 +26,7 @@ public sealed class TeachersController(
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    /// <summary>Updates a student's score.</summary>
     [Authorize(Roles = SystemRoles.Teacher.Code)]
     [HttpPatch("/api/teachers/studentScores/{studentScoreId:long}")]
     public async Task<ActionResult<StudentScoreResponse>> UpdateStudentScore(

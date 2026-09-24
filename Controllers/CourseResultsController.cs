@@ -13,6 +13,7 @@ namespace Maiven_Portal_Managment.Controllers;
 public sealed class TeacherGradeController(CourseResultService courseResultService) : ControllerBase
 {
 
+    /// <summary>Finalizes grades for a teacher-owned course section.</summary>
     [HttpPatch("finalize")]
     [Authorize(Roles = SystemRoles.Teacher.Code)]
     public async Task<ActionResult> FinalizeGrades(
