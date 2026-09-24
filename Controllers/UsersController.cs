@@ -64,6 +64,17 @@ public sealed class UsersController(UserService userService) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Uploads the authenticated user's avatar picture to local storage.</summary>
+    [HttpPost("me/avatar")]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<ActionResult<AvatarUploadResponse>> UploadAvatar(
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        var response = await userService.UpdateCurrentUserAvatarAsync(file, cancellationToken);
+        return Ok(new AvatarUploadResponse(response.AvatarUrl ?? string.Empty));
+    }
+
     /// <summary>Updates the authenticated user's profile.</summary>
     [HttpPut("profile")]
     public async Task<ActionResult<UserProfileResponse>> UpdateProfile(

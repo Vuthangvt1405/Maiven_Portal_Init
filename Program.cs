@@ -11,6 +11,7 @@ using Maiven_Portal_Managment.Repository;
 using Maiven_Portal_Managment.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi;
 
 var environmentName =
@@ -82,6 +83,7 @@ builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<CourseResultService>();
 builder.Services.AddScoped<RegistrationPeriodService>();
 builder.Services.AddScoped<ChangeCourseSectionService>();
+builder.Services.AddScoped<LocalFileStorageService>();
 
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -126,6 +128,18 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseCors("AllowAll");
+
+var webRootPath = app.Environment.WebRootPath;
+if (string.IsNullOrWhiteSpace(webRootPath))
+{
+    webRootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+}
+Directory.CreateDirectory(webRootPath);
+Directory.CreateDirectory(Path.Combine(webRootPath, "uploads", "avatars"));
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRootPath)
+});
 
 if (app.Environment.IsDevelopment())
 {

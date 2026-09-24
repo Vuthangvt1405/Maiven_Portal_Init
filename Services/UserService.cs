@@ -12,6 +12,7 @@ namespace Maiven_Portal_Managment.Services;
 
 public sealed class UserService(
     UserRepository userRepository,
+    LocalFileStorageService fileStorageService,
     CurrentUserContext currentUserContext)
 {
     private static readonly ILog Logger = LogManager.GetLogger(typeof(UserService));
@@ -129,6 +130,37 @@ public sealed class UserService(
         Logger.Info(
             $"User profile updated UserId={response.Id} " +
             $"Email={LogFormat.FormatValue(response.Email)}");
+        return response;
+    }
+
+    public async Task<UserProfileResponse> UpdateCurrentUserAvatarAsync(
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (!currentUserContext.IsAuthenticated ||
+            currentUserContext.UserId is not long userId)
+        {
+            throw new UnauthorizedException("An authenticated user is required.");
+        }
+
+        var user = await userRepository.GetTrackedByIdAsync(userId, cancellationToken);
+
+        if (user is null)
+        {
+            throw new NotFoundException("The active user account could not be found.");
+        }
+
+        var oldAvatarUrl = user.AvatarUrl;
+        var avatarUrl = await fileStorageService.SaveAvatarAsync(userId, file, cancellationToken);
+
+        user.AvatarUrl = avatarUrl;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await userRepository.SaveChangesAsync(cancellationToken);
+        fileStorageService.DeleteByRelativeUrl(oldAvatarUrl);
+
+        var response = ToUserProfileResponse(user);
+        Logger.Info($"User avatar updated UserId={response.Id}");
         return response;
     }
 
