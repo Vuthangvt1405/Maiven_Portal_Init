@@ -6,6 +6,7 @@ namespace Maiven_Portal_Managment.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<FaceCredential> FaceCredentials => Set<FaceCredential>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
@@ -25,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
         modelBuilder.Entity<User>().HasQueryFilter(x => !x.IsDeleted);
+        modelBuilder.Entity<FaceCredential>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<Role>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<UserRole>().HasQueryFilter(x => !x.IsDeleted);
         modelBuilder.Entity<AcademicYear>().HasQueryFilter(x => !x.IsDeleted);

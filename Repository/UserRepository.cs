@@ -96,12 +96,37 @@ public sealed class UserRepository(AppDbContext dbContext)
         long userId,
         CancellationToken cancellationToken)
     {
-        await dbContext.Users
-            .Where(user => user.Id == userId)
-            .ExecuteUpdateAsync(
-                setters => setters
-                    .SetProperty(user => user.IsDeleted, true)
-                    .SetProperty(user => user.UpdatedAt, DateTime.UtcNow),
-                cancellationToken);
+        await using var transaction =
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            var utcNow = DateTime.UtcNow;
+
+            await dbContext.FaceCredentials
+                .Where(credential => credential.UserId == userId)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(credential => credential.IsDeleted, true)
+                        .SetProperty(credential => credential.Embedding, (byte[]?)null)
+                        .SetProperty(credential => credential.DeletedAt, utcNow)
+                        .SetProperty(credential => credential.UpdatedAt, utcNow),
+                    cancellationToken);
+
+            await dbContext.Users
+                .Where(user => user.Id == userId)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(user => user.IsDeleted, true)
+                        .SetProperty(user => user.UpdatedAt, utcNow),
+                    cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
     }
 }

@@ -6,5 +6,6 @@ public sealed class FaceRegisterResponse
 
     public int RequiredFrames { get; set; }
 
+    // UTC expiration of the temporary registration session.
     public DateTime ExpiresAt { get; set; }
 }

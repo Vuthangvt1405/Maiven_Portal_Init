@@ -1,8 +1,6 @@
+using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Dtos.Request;
 using Maiven_Portal_Managment.Dtos.Response;
-using Maiven_Portal_Managment.Dtos.request;
-using Maiven_Portal_Managment.Dtos.response;
-using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,38 +8,24 @@ using Microsoft.AspNetCore.Mvc;
 namespace Maiven_Portal_Managment.Controllers;
 
 [ApiController]
-[Route("api/students/face")]
+[Route("api/student/face")]
 [Authorize(Roles = SystemRoles.Student.Code)]
-public sealed class StudentFaceController(
-    FaceService faceService,
-    StudentService studentService) : ControllerBase
+public sealed class StudentFaceController(FaceCredentialService faceCredentialService) : ControllerBase
 {
     [HttpGet("status")]
     public async Task<ActionResult<FaceStatusResponse>> GetFaceStatus(
-        CurrentUserContext currentStudent,
         CancellationToken cancellationToken)
     {
-        if (currentStudent.RoleUserId is not long studentId)
-        {
-            throw new UnauthorizedException("User ID is not available.");
-        }
-
-        var response = await faceService.GetFaceStatusAsync(studentId, cancellationToken);
+        var response = await faceCredentialService.GetFaceStatusAsync(cancellationToken);
         return Ok(response);
     }
 
-    [HttpPost("register")]
-    public async Task<ActionResult<FaceRegisterResponse>> RegisterFace(
-        CurrentUserContext currentStudent,
+    [HttpPost("register/start")]
+    public async Task<ActionResult<FaceRegisterResponse>> StartFaceRegistration(
         [FromBody] FaceRegisterRequest request,
         CancellationToken cancellationToken)
     {
-        if (currentStudent.RoleUserId is not long studentId)
-        {
-            throw new UnauthorizedException("User ID is not available.");
-        }
-
-        var response = await faceService.RegisterFaceAsync(studentId, request, cancellationToken);
+        var response = await faceCredentialService.StartFaceRegistrationAsync(request, cancellationToken);
         return Ok(response);
     }
 
@@ -52,17 +36,16 @@ public sealed class StudentFaceController(
         IFormFile frame,
         CancellationToken cancellationToken)
     {
-        var response = await faceService.UploadFaceFrameAsync(sessionId, frame, cancellationToken);
+        var response = await faceCredentialService.UploadFaceFrameAsync(sessionId, frame, cancellationToken);
         return Ok(response);
     }
-    
-    [HttpPost("register/{sessionId:guid}/verify")]
-    [Consumes("multipart/form-data")]
-    public async Task<ActionResult<FaceVerifyResponse>> VerifyFace(
+
+    [HttpPost("register/{sessionId:guid}/confirm")]
+    public async Task<ActionResult<FaceVerifyResponse>> ConfirmFaceRegistration(
         [FromRoute] Guid sessionId,
         CancellationToken cancellationToken)
     {
-        var response = await faceService.VerifyFaceAsync(sessionId, frame, cancellationToken);
+        var response = await faceCredentialService.ConfirmFaceRegistrationAsync(sessionId, cancellationToken);
         return Ok(response);
     }
 
@@ -71,22 +54,16 @@ public sealed class StudentFaceController(
         [FromRoute] Guid sessionId,
         CancellationToken cancellationToken)
     {
-        await faceService.CancelFaceRegistrationAsync(sessionId, cancellationToken);
+        await faceCredentialService.CancelFaceRegistrationAsync(sessionId, cancellationToken);
         return NoContent();
     }
 
     [HttpDelete]
-    public async Task<ActionResult> DeleteFaceRequest(
-        CurrentUserContext currentStudent,
+    public async Task<ActionResult> DeleteFace(
+        [FromBody] DeleteFaceRequest request,
         CancellationToken cancellationToken)
     {
-        if (currentStudent.RoleUserId is not long studentId)
-        {
-            throw new UnauthorizedException("User ID is not available.");
-        }
-
-        await faceService.DeleteFaceAsync(studentId, cancellationToken);
+        await faceCredentialService.DeleteFaceAsync(request, cancellationToken);
         return NoContent();
     }
-
 }

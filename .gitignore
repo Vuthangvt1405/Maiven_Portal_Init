@@ -13,4 +13,7 @@ obj/
 Logs/*.log
 Logs/*.log.*
 
+# Local face-recognition model files are supplied during setup/deployment.
+Models/*.onnx
+
 .fake

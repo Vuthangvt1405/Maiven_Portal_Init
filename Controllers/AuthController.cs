@@ -41,13 +41,13 @@ public sealed class AuthController(AuthService authService) : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost(face-login)]
+    [HttpPost("face-login")]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<AuthResponse>> FaceLogin(
         [FromForm] List<IFormFile> request,
         CancellationToken cancellationToken)
     {
-        var response = await FaceService.FaceLoginAsync(request, cancellationToken);
+        var response = await authService.FaceLoginAsync(request, cancellationToken);
         return Ok(response);
     }
 }

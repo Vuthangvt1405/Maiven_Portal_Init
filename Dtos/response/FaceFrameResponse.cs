@@ -8,6 +8,7 @@ public sealed class FaceFrameResponse
 
     public int RequiredCount { get; set; }
 
+    // Enough frames have been accepted; the user must still confirm before saving.
     public bool IsComplete =>
-        AcceptedCount >= RequiredCount;
+        RequiredCount > 0 && AcceptedCount >= RequiredCount;
 }

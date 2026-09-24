@@ -66,6 +66,7 @@ builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<AnnouncementRepository>();
 builder.Services.AddScoped<CourseResultRepository>();
 builder.Services.AddScoped<RegistrationPeriodRepository>();
+builder.Services.AddScoped<FaceCredentialRepository>();
 
 
 builder.Services.AddScoped<AuthService>();
@@ -82,7 +83,13 @@ builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<CourseResultService>();
 builder.Services.AddScoped<RegistrationPeriodService>();
 builder.Services.AddScoped<ChangeCourseSectionService>();
+builder.Services.AddScoped<FaceCredentialService>();
+builder.Services.AddSingleton<FaceRecognitionService>();
+builder.Services.AddSingleton<FaceRegisterSessionService>();
 
+builder.Services
+    .AddOptions<FaceRecognitionOptions>()
+    .Bind(builder.Configuration.GetSection(FaceRecognitionOptions.SectionName));
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddJwtAuthentication(builder.Configuration);

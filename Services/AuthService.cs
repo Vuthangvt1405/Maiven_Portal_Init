@@ -1,5 +1,6 @@
 using log4net;
 using Maiven_Portal_Managment.Common;
+using Maiven_Portal_Managment.Configuration;
 using Maiven_Portal_Managment.Data.Entities;
 using Maiven_Portal_Managment.Dtos;
 using Maiven_Portal_Managment.Dtos.Request;
@@ -7,18 +8,26 @@ using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
 using Maiven_Portal_Managment.Logging;
 using Maiven_Portal_Managment.Repository;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Maiven_Portal_Managment.Services;
 
 public sealed class AuthService(
     AuthRepository authRepository,
+    FaceCredentialRepository faceCredentialRepository,
+    FaceRecognitionService faceRecognitionService,
     IPasswordHasher<User> passwordHasher,
-    JwtTokenService tokenService)
+    JwtTokenService tokenService,
+    IOptions<FaceRecognitionOptions> faceOptionsAccessor)
 {
     private static readonly ILog Logger = LogManager.GetLogger(typeof(AuthService));
     private const string InvalidCredentialsMessage = "Invalid email or password.";
+    private const string FaceVerificationFailedMessage = "Face verification failed.";
+    private const int RequiredFaceLoginFrames = 3;
+    private readonly FaceRecognitionOptions faceOptions = faceOptionsAccessor.Value;
 
     public async Task<AuthResponse> RegisterStudentAsync(
         RegisterRequest request,
@@ -66,6 +75,127 @@ public sealed class AuthService(
         CancellationToken cancellationToken)
     {
         var response = await AuthenticateAsync(request, isAdminLogin: true, cancellationToken);
+        return response;
+    }
+
+    public async Task<AuthResponse> FaceLoginAsync(
+        IReadOnlyList<IFormFile> frames,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+
+        if (frames.Count != RequiredFaceLoginFrames)
+        {
+            throw new BadRequestException(
+                $"Exactly {RequiredFaceLoginFrames} face images are required.");
+        }
+
+        var embeddings = new List<float[]>(RequiredFaceLoginFrames);
+        for (var index = 0; index < frames.Count; index++)
+        {
+            var embedding = await faceRecognitionService.TryCreateEmbeddingAsync(
+                frames[index],
+                cancellationToken);
+
+            if (embedding is null)
+            {
+                Logger.Warn(
+                    $"Face login rejected Reason=FrameValidationFailed " +
+                    $"FrameNumber={index + 1}");
+                throw new UnauthorizedException(FaceVerificationFailedMessage);
+            }
+
+            embeddings.Add(embedding);
+        }
+
+        var representativeEmbedding =
+            faceRecognitionService.CreateRepresentativeEmbedding(embeddings);
+        var credentials = await faceCredentialRepository.GetActiveForModelAsync(
+            faceRecognitionService.ModelName,
+            faceRecognitionService.ModelVersion,
+            representativeEmbedding.Length,
+            cancellationToken);
+
+        var rankedMatches = credentials
+            .Select(credential => new
+            {
+                Credential = credential,
+                Similarity = FaceRecognitionService.CosineSimilarity(
+                    representativeEmbedding,
+                    DeserializeEmbedding(credential))
+            })
+            .OrderByDescending(match => match.Similarity)
+            .ToArray();
+
+        if (rankedMatches.Length == 0)
+        {
+            Logger.Warn(
+                $"Face login rejected Reason=NoCompatibleCredential " +
+                $"ModelName={faceRecognitionService.ModelName} " +
+                $"ModelVersion={faceRecognitionService.ModelVersion} " +
+                $"EmbeddingDimension={representativeEmbedding.Length}");
+            throw new UnauthorizedException(FaceVerificationFailedMessage);
+        }
+
+        var top1 = rankedMatches[0];
+        var top2Similarity = rankedMatches.Length > 1
+            ? rankedMatches[1].Similarity
+            : (double?)null;
+        var margin = top2Similarity.HasValue
+            ? top1.Similarity - top2Similarity.Value
+            : (double?)null;
+
+        Logger.Info(
+            $"Face login comparison CandidateCount={rankedMatches.Length} " +
+            $"Top1CredentialId={top1.Credential.Id} " +
+            $"Top1UserId={top1.Credential.UserId} " +
+            $"Top1Similarity={top1.Similarity:F4} " +
+            $"Top2Similarity={(top2Similarity.HasValue ? top2Similarity.Value.ToString("F4") : "N/A")} " +
+            $"Margin={(margin.HasValue ? margin.Value.ToString("F4") : "N/A")} " +
+            $"MatchThreshold={faceOptions.MatchThreshold:F4} " +
+            $"MinMargin={faceOptions.MinMargin:F4}");
+
+        if (top1.Similarity < faceOptions.MatchThreshold)
+        {
+            Logger.Warn(
+                $"Face login rejected Reason=BelowMatchThreshold " +
+                $"Top1Similarity={top1.Similarity:F4} " +
+                $"MatchThreshold={faceOptions.MatchThreshold:F4}");
+            throw new UnauthorizedException(FaceVerificationFailedMessage);
+        }
+
+        if (margin.HasValue && margin.Value < faceOptions.MinMargin)
+        {
+            Logger.Warn(
+                $"Face login rejected Reason=InsufficientMargin " +
+                $"Margin={margin.Value:F4} MinMargin={faceOptions.MinMargin:F4}");
+            throw new UnauthorizedException(FaceVerificationFailedMessage);
+        }
+
+        var account = await authRepository.FindByUserIdAsync(
+            top1.Credential.UserId,
+            cancellationToken);
+        var roleAssignment = account?.RoleAssignments.Count == 1
+            ? account.RoleAssignments.Single()
+            : null;
+
+        if (account is null ||
+            roleAssignment is null ||
+            !string.Equals(
+                roleAssignment.RoleCode,
+                SystemRoles.Student.Code,
+                StringComparison.Ordinal))
+        {
+            Logger.Warn(
+                $"Face login rejected Reason=MatchedStudentUnavailable " +
+                $"CandidateUserId={top1.Credential.UserId}");
+            throw new UnauthorizedException(FaceVerificationFailedMessage);
+        }
+
+        var response = CreateAuthResponse(account, roleAssignment);
+        Logger.Info(
+            $"Face login succeeded UserId={response.User.Id} " +
+            $"Similarity={top1.Similarity:F4}");
         return response;
     }
 
@@ -197,4 +327,24 @@ public sealed class AuthService(
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static float[] DeserializeEmbedding(FaceCredential credential)
+    {
+        if (credential.Embedding is null ||
+            credential.EmbeddingDimension <= 0 ||
+            credential.Embedding.Length != credential.EmbeddingDimension * sizeof(float))
+        {
+            throw new InvalidOperationException(
+                $"Face credential {credential.Id} contains an invalid embedding.");
+        }
+
+        var embedding = new float[credential.EmbeddingDimension];
+        Buffer.BlockCopy(
+            credential.Embedding,
+            0,
+            embedding,
+            0,
+            credential.Embedding.Length);
+        return embedding;
+    }
 }
