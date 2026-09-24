@@ -11,13 +11,13 @@ namespace Maiven_Portal_Managment.Controllers;
 
 [ApiController]
 [Route("api/teachers")]
-[Authorize(Roles = SystemRoles.Teacher.Code)]
 public sealed class TeachersController(
     TeacherService teacherService,
     StudentScoreService studentScoreService) : ControllerBase
 {
     /// <summary>Creates a teacher account.</summary>
     [HttpPost]
+    [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<AuthUserResponse>> Create(
         [FromBody] CreateTeacherRequest request,
         CancellationToken cancellationToken)
