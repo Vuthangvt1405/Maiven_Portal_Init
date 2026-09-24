@@ -13,4 +13,7 @@ obj/
 Logs/*.log
 Logs/*.log.*
 
+# Locally uploaded pictures (served from wwwroot, per-environment data)
+wwwroot/uploads/
+
 .fake
