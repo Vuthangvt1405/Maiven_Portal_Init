@@ -28,13 +28,17 @@ public sealed class CourseSectionService(
     private const string InvalidCapacityMessage =
         "Capacity must be greater than 0.";
 
+    private const string OutsideSemesterMessage =
+        "The course section date range must be within the selected semester.";
+
     public async Task<CourseSectionResponse> CreateAsync(
         CreateCourseSectionRequest request,
         CancellationToken cancellationToken)
     {
         await EnsureTeacherExistsAsync(request.TeacherUserRoleId, cancellationToken);
-        await EnsureSemesterExistsAsync(request.SemesterId, cancellationToken);
-        await EnsureCourseExistsAsync(request.CourseId, cancellationToken);
+        var semester = await EnsureSemesterExistsAsync(request.SemesterId, cancellationToken);
+        var course = await EnsureCourseExistsAsync(request.CourseId, cancellationToken);
+        EnsureSectionDatesWithinSemester(semester, request.StartDate, request.EndDate);
         await EnsureSectionCodeNotDuplicatedAsync(request.SemesterId, request.SectionCode, cancellationToken);
 
         var entity = new CourseSection
@@ -61,6 +65,7 @@ public sealed class CourseSectionService(
         }
 
         var created = await courseSectionRepository.AddAsync(entity, cancellationToken);
+        created.Course = course;
         return ToResponse(created);
     }
 
@@ -81,11 +86,19 @@ public sealed class CourseSectionService(
             existing.TeacherUserRoleId = request.TeacherUserRoleId;
         }
 
+        Semester semester;
         if (existing.SemesterId != request.SemesterId)
         {
-            await EnsureSemesterExistsAsync(request.SemesterId, cancellationToken);
+            semester = await EnsureSemesterExistsAsync(request.SemesterId, cancellationToken);
             existing.SemesterId = request.SemesterId;
         }
+        else
+        {
+            semester = await semesterRepository.GetByIdAsync(existing.SemesterId, cancellationToken)
+                ?? throw new NotFoundException("The specified semester could not be found.");
+        }
+
+        EnsureSectionDatesWithinSemester(semester, request.StartDate, request.EndDate);
 
         existing.Capacity = request.Capacity;
         existing.DayOfWeek = request.DayOfWeek;
@@ -97,6 +110,12 @@ public sealed class CourseSectionService(
         existing.UpdatedAt = DateTime.UtcNow;
 
         await courseSectionRepository.SaveChangesAsync(cancellationToken);
+
+        if (existing.Course is null)
+        {
+            existing.Course = await courseRepository.GetByIdAsync(existing.CourseId, cancellationToken)
+                ?? throw new NotFoundException("The specified course could not be found.");
+        }
 
         return ToResponse(existing);
     }
@@ -110,6 +129,7 @@ public sealed class CourseSectionService(
 
         var result = await courseSectionRepository.GetPagedAsync(
             parameters.CourseId,
+            parameters.CourseName,
             parameters.SemesterId,
             parameters.TeacherUserRoleId,
             parameters.SectionCode,
@@ -122,7 +142,7 @@ public sealed class CourseSectionService(
         var items = result.Items
             .Select(x => new CourseSectionWithEnrollmentCount(
                 x.Section.Id,
-                x.Section.CourseId,
+                ToCourseResponse(x.Section.Course),
                 x.Section.SemesterId,
                 x.Section.TeacherUserRoleId,
                 x.Section.SectionCode,
@@ -157,7 +177,7 @@ public sealed class CourseSectionService(
         return response;
     }
 
-    public async Task<(IReadOnlyList<CourseSectionResponse> Items, int TotalItems)> TeacherGetPagedAsync(
+    public async Task<(IReadOnlyList<CourseSectionWithEnrollmentCount> Items, int TotalItems)> TeacherGetPagedAsync(
     long teacherUserRoleId,
     CourseSectionQueryParameters parameters,
     CancellationToken cancellationToken)
@@ -168,6 +188,7 @@ public sealed class CourseSectionService(
         var result = await courseSectionRepository.GetPagedForTeacherAsync(
             teacherUserRoleId,
             parameters.CourseId,
+            parameters.CourseName,
             parameters.SemesterId,
             parameters.SectionCode,
             parameters.DayOfWeek,
@@ -176,11 +197,11 @@ public sealed class CourseSectionService(
             pageSize,
             cancellationToken);
 
-        var items = result.Items.Select(ToResponse).ToArray();
+        var items = result.Items.Select(ToWithEnrollmentCountResponse).ToArray();
         return (items, result.TotalItems);
     }
 
-    public async Task<(IReadOnlyList<CourseSectionResponse> Items, int TotalItems)> StudentGetPagedAsync(
+    public async Task<(IReadOnlyList<CourseSectionWithEnrollmentCount> Items, int TotalItems)> StudentGetPagedAsync(
         long studentUserRoleId,
         CourseSectionQueryParameters parameters,
         CancellationToken cancellationToken)
@@ -193,6 +214,7 @@ public sealed class CourseSectionService(
         var result = await courseSectionRepository.GetPagedForStudentAsync(
             studentUserRoleId,
             parameters.CourseId,
+            parameters.CourseName,
             parameters.SemesterId,
             parameters.SectionCode,
             parameters.DayOfWeek,
@@ -201,7 +223,7 @@ public sealed class CourseSectionService(
             pageSize,
             cancellationToken);
 
-        var items = result.Items.Select(ToResponse).ToArray();
+        var items = result.Items.Select(ToWithEnrollmentCountResponse).ToArray();
         return (items, result.TotalItems);
     }
 
@@ -267,7 +289,7 @@ public sealed class CourseSectionService(
         return new CourseSectionDetailResponse(
             Id: result.Section.Id,
             SectionCode: result.Section.SectionCode,
-            CourseId: result.Section.CourseId,
+            Course: ToCourseResponse(result.Section.Course),
             SemesterId: result.Section.SemesterId,
             Students: pagedStudents
         );
@@ -295,7 +317,16 @@ public sealed class CourseSectionService(
                     score.Component.Name,
                     score.Component.Weight,
                     score.Score))
-                .ToList());
+                .ToList(),
+            enrollment.CourseResult is null || enrollment.CourseResult.IsDeleted
+                ? null
+                : new StudentFinalResultResponse
+                {
+                    FinalScore = enrollment.CourseResult.FinalScore,
+                    LetterGrade = enrollment.CourseResult.LetterGrade,
+                    GradePoint = enrollment.CourseResult.GradePoint,
+                    ResultStatus = enrollment.CourseResult.ResultStatus
+                });
 
     private static StudentCourseResultResponse ToStudentResultResponse(Enrollment enrollment) => new()
     {
@@ -355,7 +386,7 @@ public sealed class CourseSectionService(
 
     private static CourseSectionResponse ToResponse(CourseSection entity) => new(
     entity.Id,
-    entity.CourseId,
+    ToCourseResponse(entity.Course),
     entity.SemesterId,
     entity.TeacherUserRoleId,
     entity.SectionCode,
@@ -369,6 +400,36 @@ public sealed class CourseSectionService(
     AsUtc(entity.CreatedAt),
     AsUtc(entity.UpdatedAt)
 );
+
+    private static CourseSectionWithEnrollmentCount ToWithEnrollmentCountResponse(
+        (CourseSection Section, int EnrollmentCount) item) => new(
+        item.Section.Id,
+        ToCourseResponse(item.Section.Course),
+        item.Section.SemesterId,
+        item.Section.TeacherUserRoleId,
+        item.Section.SectionCode,
+        item.Section.Capacity,
+        item.Section.DayOfWeek,
+        (int)item.Section.StartPeriod,
+        (int)item.Section.EndPeriod,
+        item.EnrollmentCount,
+        item.Section.StartDate,
+        item.Section.EndDate,
+        item.Section.Status,
+        AsUtc(item.Section.CreatedAt),
+        AsUtc(item.Section.UpdatedAt)
+    );
+
+    private static CourseResponse ToCourseResponse(Course course) => new(
+        Id: course.Id,
+        CourseCode: course.CourseCode,
+        CourseName: course.CourseName,
+        Credits: course.Credits,
+        Description: course.Description,
+        Status: course.Status,
+        CreatedAt: AsUtc(course.CreatedAt),
+        UpdatedAt: AsUtc(course.UpdatedAt)
+    );
 
     private static DateTime AsUtc(DateTime value) => value.Kind switch
     {
@@ -386,22 +447,26 @@ public sealed class CourseSectionService(
         }
     }
 
-    private async Task EnsureSemesterExistsAsync(long semesterId, CancellationToken cancellationToken)
+    private async Task<Semester> EnsureSemesterExistsAsync(long semesterId, CancellationToken cancellationToken)
     {
         var semester = await semesterRepository.GetByIdAsync(semesterId, cancellationToken);
         if (semester is null)
         {
             throw new NotFoundException("The specified semester could not be found.");
         }
+
+        return semester;
     }
 
-    private async Task EnsureCourseExistsAsync(long courseId, CancellationToken cancellationToken)
+    private async Task<Course> EnsureCourseExistsAsync(long courseId, CancellationToken cancellationToken)
     {
         var course = await courseRepository.GetByIdAsync(courseId, cancellationToken);
         if (course is null)
         {
             throw new NotFoundException("The specified course could not be found.");
         }
+
+        return course;
     }
 
     private async Task EnsureSectionCodeNotDuplicatedAsync(long semesterId, string sectionCode, CancellationToken cancellationToken)
@@ -414,6 +479,14 @@ public sealed class CourseSectionService(
         if (existingSection is not null)
         {
             throw new ConflictException(DuplicateSectionCodeMessage);
+        }
+    }
+
+    private static void EnsureSectionDatesWithinSemester(Semester semester, DateOnly startDate, DateOnly endDate)
+    {
+        if (startDate < semester.StartDate || endDate > semester.EndDate)
+        {
+            throw new BadRequestException(OutsideSemesterMessage);
         }
     }
 }

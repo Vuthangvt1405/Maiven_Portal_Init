@@ -4,7 +4,7 @@ namespace Maiven_Portal_Managment.Dtos.response;
 
 public sealed record CourseSectionWithEnrollmentCount(
     long Id,
-    long CourseId,
+    CourseResponse Course,
     long SemesterId,
     long TeacherUserRoleId,
     string SectionCode,

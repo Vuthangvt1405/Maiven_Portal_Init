@@ -67,7 +67,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
     /// <summary>Retrieves a paginated list of course sections assigned to the authenticated teacher.</summary>
     [Authorize(Roles = SystemRoles.Teacher.Code)]
     [HttpGet("teachers/me/course-sections")]
-    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> TeacherGetAll(
+    public async Task<ActionResult<PagedResponse<CourseSectionWithEnrollmentCount>>> TeacherGetAll(
         [FromQuery] CourseSectionQueryParameters parameters,
         CurrentUserContext currentTeacherContext,
         CancellationToken cancellationToken)
@@ -87,7 +87,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
         var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
 
-        var response = new PagedResponse<CourseSectionResponse>
+        var response = new PagedResponse<CourseSectionWithEnrollmentCount>
         {
             Items = result.Items,
             PageNumber = pageNumber,
@@ -132,7 +132,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
     /// <summary>Retrieves a paginated list of course sections for the authenticated student.</summary>
     [Authorize(Roles = SystemRoles.Student.Code)]
     [HttpGet("student/me/course-sections")]
-    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> StudentGetAll(
+    public async Task<ActionResult<PagedResponse<CourseSectionWithEnrollmentCount>>> StudentGetAll(
         [FromQuery] CourseSectionQueryParameters parameters,
         CurrentUserContext currentStudentContext,
         CancellationToken cancellationToken)
@@ -152,7 +152,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
         var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
 
-        var response = new PagedResponse<CourseSectionResponse>
+        var response = new PagedResponse<CourseSectionWithEnrollmentCount>
         {
             Items = result.Items,
             PageNumber = pageNumber,
