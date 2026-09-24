@@ -5,6 +5,7 @@ namespace Maiven_Portal_Managment.Dtos.request;
 public sealed record CourseSectionQueryParameters
 {
     public long? CourseId { get; set; }
+    public string? CourseName { get; set; }
     public long? SemesterId { get; set; }
     public long? TeacherUserRoleId { get; set; }
     public string? SectionCode { get; set; }
