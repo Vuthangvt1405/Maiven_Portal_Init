@@ -43,6 +43,14 @@ public sealed class EmailSuffixWhitelistService(EmailSuffixWhitelistRepository e
         return emailSuffixWhitelistRepository.HasMatchingSuffixAsync(emailDomain, cancellationToken);
     }
 
+    public async Task DeleteAsync(long ruleId, CancellationToken cancellationToken)
+    {
+        if (!await emailSuffixWhitelistRepository.DeleteAsync(ruleId, cancellationToken))
+        {
+            throw new NotFoundException("The email suffix whitelist rule could not be found.");
+        }
+    }
+
     private static EmailSuffixWhitelistRuleResponse ToResponse(EmailSuffixWhitelistRule rule) =>
         new(rule.Id, rule.Suffix, rule.CreatedAt, rule.UpdatedAt);
 

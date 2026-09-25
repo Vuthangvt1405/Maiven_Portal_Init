@@ -27,4 +27,12 @@ public sealed class EmailSuffixWhitelistController(EmailSuffixWhitelistService e
     public async Task<ActionResult<IReadOnlyList<EmailSuffixWhitelistRuleResponse>>> GetAll(
         CancellationToken cancellationToken) =>
         Ok(await emailSuffixWhitelistService.GetAllAsync(cancellationToken));
+
+    /// <summary>Soft-deletes an approved email suffix.</summary>
+    [HttpDelete("{ruleId:long}")]
+    public async Task<IActionResult> Delete(long ruleId, CancellationToken cancellationToken)
+    {
+        await emailSuffixWhitelistService.DeleteAsync(ruleId, cancellationToken);
+        return NoContent();
+    }
 }

@@ -15,7 +15,10 @@ public sealed class EmailSuffixWhitelistRuleConfiguration : IEntityTypeConfigura
         builder.Property(rule => rule.IsDeleted).HasColumnName("isDelete").HasDefaultValue(false).IsRequired();
         builder.Property(rule => rule.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
         builder.Property(rule => rule.UpdatedAt).HasColumnName("updated_at").HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()").IsRequired();
-        builder.HasIndex(rule => rule.Suffix).IsUnique().HasDatabaseName("UX_EMAIL_SUFFIX_WHITELIST_suffix");
+        builder.HasIndex(rule => rule.Suffix)
+            .IsUnique()
+            .HasFilter("[isDelete] = 0")
+            .HasDatabaseName("UX_EMAIL_SUFFIX_WHITELIST_suffix");
         builder.HasIndex(rule => rule.IsDeleted).HasDatabaseName("IX_EMAIL_SUFFIX_WHITELIST_isDelete");
     }
 }

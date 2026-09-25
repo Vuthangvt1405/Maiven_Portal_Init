@@ -36,8 +36,8 @@ erDiagram
 
     EMAIL_SUFFIX_WHITELIST {
         bigint id PK
-        varchar suffix UK "approved domain suffix, e.g. maiven.vn"
-        boolean isDelete
+        varchar suffix UK "unique among active rules; approved domain suffix, e.g. maiven.vn"
+        boolean isDelete "soft delete; suffix can be re-created after deletion"
         datetime created_at
         datetime updated_at
     }

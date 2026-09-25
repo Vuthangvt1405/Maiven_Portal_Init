@@ -29,4 +29,18 @@ public sealed class EmailSuffixWhitelistRepository(AppDbContext dbContext)
             .AsNoTracking()
             .OrderBy(rule => rule.Suffix)
             .ToListAsync(cancellationToken);
+
+    public async Task<bool> DeleteAsync(long ruleId, CancellationToken cancellationToken)
+    {
+        var rule = await dbContext.EmailSuffixWhitelistRules
+            .SingleOrDefaultAsync(rule => rule.Id == ruleId, cancellationToken);
+        if (rule is null)
+        {
+            return false;
+        }
+
+        rule.IsDeleted = true;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }
