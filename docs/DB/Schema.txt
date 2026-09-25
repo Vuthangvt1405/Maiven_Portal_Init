@@ -34,6 +34,14 @@ erDiagram
         datetime updated_at
     }
 
+    EMAIL_SUFFIX_WHITELIST {
+        bigint id PK
+        varchar suffix UK "approved domain suffix, e.g. maiven.vn"
+        boolean isDelete
+        datetime created_at
+        datetime updated_at
+    }
+
     %% Flexible role model: add new roles through ROLES data instead of
     %% creating separate profile tables for student / teacher / admin.
     %% Recommended constraint: UNIQUE(user_id, role_id).

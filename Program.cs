@@ -68,7 +68,8 @@ builder.Services.AddScoped<AnnouncementRepository>();
 builder.Services.AddScoped<CourseResultRepository>();
 builder.Services.AddScoped<RegistrationPeriodRepository>();
 builder.Services.AddScoped<FaceCredentialRepository>();
-builder.Services.AddScoped<PasswordResetRepository>();
+    builder.Services.AddScoped<PasswordResetRepository>();
+    builder.Services.AddScoped<EmailSuffixWhitelistRepository>();
 
 
 builder.Services.AddScoped<AuthService>();
@@ -86,7 +87,8 @@ builder.Services.AddScoped<CourseResultService>();
 builder.Services.AddScoped<RegistrationPeriodService>();
 builder.Services.AddScoped<ChangeCourseSectionService>();
 builder.Services.AddScoped<FaceCredentialService>();
-builder.Services.AddScoped<PasswordResetService>();
+    builder.Services.AddScoped<PasswordResetService>();
+    builder.Services.AddScoped<EmailSuffixWhitelistService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<FaceRecognitionService>();
 builder.Services.AddSingleton<FaceRegisterSessionService>();

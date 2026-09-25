@@ -18,6 +18,7 @@ namespace Maiven_Portal_Managment.Services;
 public sealed class AuthService(
     AuthRepository authRepository,
     FaceCredentialRepository faceCredentialRepository,
+    EmailSuffixWhitelistService emailSuffixWhitelistService,
     FaceRecognitionService faceRecognitionService,
     IPasswordHasher<User> passwordHasher,
     JwtTokenService tokenService,
@@ -33,6 +34,11 @@ public sealed class AuthService(
         CancellationToken cancellationToken)
     {
         var normalizedEmail = NormalizeEmail(request.Email);
+
+        if (!await emailSuffixWhitelistService.IsEmailAllowedAsync(normalizedEmail, cancellationToken))
+        {
+            throw new BadRequestException("Student registration is only allowed with an approved email domain.");
+        }
 
         if (await authRepository.EmailExistsAsync(normalizedEmail, cancellationToken))
         {
