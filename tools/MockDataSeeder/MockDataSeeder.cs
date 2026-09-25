@@ -626,10 +626,10 @@ public sealed class MockDataSeeder(AppDbContext dbContext)
                     _summary.StudentScoresUpdated++;
                 }
 
-                score.Score = 55m +
+                score.Score =
                     (seededEnrollment.StudentIndex * 7 +
                      seededEnrollment.SectionIndex * 3 +
-                     componentIndex * 11) % 41;
+                     componentIndex * 5) % 11;
                 score.UpdatedById = teacher.User.Id;
                 score.IsDeleted = false;
                 enrollmentScores.Add(score);
@@ -679,7 +679,7 @@ public sealed class MockDataSeeder(AppDbContext dbContext)
             result.FinalScore = finalScore;
             result.LetterGrade = grade.Letter;
             result.GradePoint = grade.Point;
-            result.ResultStatus = finalScore >= 60m ? ResultStatus.PASS : ResultStatus.FAIL;
+            result.ResultStatus = finalScore >= 6m ? ResultStatus.PASS : ResultStatus.FAIL;
             result.IsDeleted = false;
         }
 
@@ -688,10 +688,10 @@ public sealed class MockDataSeeder(AppDbContext dbContext)
 
     private static (string Letter, decimal Point) GetGrade(decimal score) => score switch
     {
-        >= 90m => ("A", 4.00m),
-        >= 80m => ("B", 3.00m),
-        >= 70m => ("C", 2.00m),
-        >= 60m => ("D", 1.00m),
+        >= 9m => ("A", 4.00m),
+        >= 8m => ("B", 3.00m),
+        >= 7m => ("C", 2.00m),
+        >= 6m => ("D", 1.00m),
         _ => ("F", 0.00m)
     };
 

@@ -39,6 +39,9 @@ Students and Teachers authenticate through `POST /api/auth/login`. The administr
 
 The shared password is development-only and must never be used for production accounts.
 
+Mock grade-component scores use a 0-10 scale. Course results use the same scale,
+with 6 as the passing score and grade bands A (9+), B (8+), C (7+), D (6+), and F (<6).
+
 ## Generated dataset
 
 A successful first run creates:
