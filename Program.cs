@@ -68,6 +68,7 @@ builder.Services.AddScoped<AnnouncementRepository>();
 builder.Services.AddScoped<CourseResultRepository>();
 builder.Services.AddScoped<RegistrationPeriodRepository>();
 builder.Services.AddScoped<FaceCredentialRepository>();
+builder.Services.AddScoped<PasswordResetRepository>();
 
 
 builder.Services.AddScoped<AuthService>();
@@ -85,6 +86,8 @@ builder.Services.AddScoped<CourseResultService>();
 builder.Services.AddScoped<RegistrationPeriodService>();
 builder.Services.AddScoped<ChangeCourseSectionService>();
 builder.Services.AddScoped<FaceCredentialService>();
+builder.Services.AddScoped<PasswordResetService>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<FaceRecognitionService>();
 builder.Services.AddSingleton<FaceRegisterSessionService>();
 builder.Services.AddScoped<LocalFileStorageService>();
@@ -94,6 +97,8 @@ builder.Services
     .Bind(builder.Configuration.GetSection(FaceRecognitionOptions.SectionName));
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IPasswordHasher<PasswordResetRequest>, PasswordHasher<PasswordResetRequest>>();
+builder.Services.AddOptions<SmtpOptions>().Bind(builder.Configuration.GetSection(SmtpOptions.SectionName));
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
 builder.Services.AddCors(options =>
