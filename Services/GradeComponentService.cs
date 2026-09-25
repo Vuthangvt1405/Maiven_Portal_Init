@@ -10,6 +10,24 @@ public sealed class GradeComponentService(
     CourseSectionRepository courseSectionRepository,
     GradeComponentRepository gradeComponentRepository)
 {
+    public async Task<IReadOnlyList<GradeComponentResponse>> GetByCourseSectionAsync(
+        long courseSectionId,
+        CancellationToken cancellationToken)
+    {
+        if (courseSectionId <= 0)
+            throw new BadRequestException("Course section ID must be a positive number.");
+
+        var section = await courseSectionRepository.GetByIdAsync(courseSectionId, cancellationToken);
+        if (section is null)
+            throw new NotFoundException("The course section could not be found.");
+
+        var components = await gradeComponentRepository.GetBySectionIdAsync(
+            courseSectionId,
+            cancellationToken);
+
+        return components.Select(ToResponse).ToArray();
+    }
+
     public async Task<IReadOnlyList<GradeComponentResponse>> UpdateWeightsAsync(
         long courseSectionId,
         UpdateGradeComponentsRequest request,
@@ -54,10 +72,13 @@ public sealed class GradeComponentService(
             throw new ConflictException(exception.Message);
         }
 
-        return components.Select(component => new GradeComponentResponse(
+        return components.Select(ToResponse).ToArray();
+    }
+
+    private static GradeComponentResponse ToResponse(GradeComponent component) =>
+        new(
             component.Id,
             component.SectionId,
             component.Name,
-            component.Weight)).ToArray();
-    }
+            component.Weight);
 }

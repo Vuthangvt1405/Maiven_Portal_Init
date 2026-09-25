@@ -6,6 +6,17 @@ namespace Maiven_Portal_Managment.Repository;
 
 public sealed class GradeComponentRepository(AppDbContext dbContext)
 {
+    public async Task<IReadOnlyList<GradeComponent>> GetBySectionIdAsync(
+        long sectionId,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.GradeComponents
+            .AsNoTracking()
+            .Where(component => component.SectionId == sectionId)
+            .OrderBy(component => component.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<GradeComponent>> UpdateWeightsAsync(
         long sectionId,
         IReadOnlyDictionary<long, decimal> weights,

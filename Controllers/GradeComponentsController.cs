@@ -12,6 +12,19 @@ namespace Maiven_Portal_Managment.Controllers;
 [Authorize(Roles = SystemRoles.Admin.Code + "," + SystemRoles.Teacher.Code)]
 public sealed class GradeComponentsController(GradeComponentService gradeComponentService) : ControllerBase
 {
+    /// <summary>Retrieves all grade components for a course section.</summary>
+    [HttpGet("{courseSectionId:long}")]
+    public async Task<ActionResult<IReadOnlyList<GradeComponentResponse>>> GetByCourseSection(
+        long courseSectionId,
+        CancellationToken cancellationToken)
+    {
+        var response = await gradeComponentService.GetByCourseSectionAsync(
+            courseSectionId,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
     /// <summary>Updates grade-component weights for a course section.</summary>
     [HttpPut("{courseSectionId:long}")]
     public async Task<ActionResult<IReadOnlyList<GradeComponentResponse>>> Update(
