@@ -139,7 +139,7 @@ erDiagram
         bigint id PK
         bigint enrollment_id FK
         bigint component_id FK
-        decimal score "nullable"
+        decimal score "nullable, range 0-100"
         bigint updated_by FK
         boolean isDelete
         datetime updated_at
