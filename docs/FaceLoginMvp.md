@@ -115,21 +115,13 @@ Reason=FaceTooTilted
 
 Client chỉ nhận lỗi chung để không làm lộ thông tin nhận diện.
 
-## 5. Tạo embedding đại diện
+## 5. Tạo và so sánh embedding
 
-Cả đăng ký và đăng nhập đều dùng 3 embedding:
+Khi đăng ký, ba embedding được chuẩn hóa, lấy trung bình rồi chuẩn hóa lần nữa để tạo một embedding đại diện.
 
-```text
-Chuẩn hóa từng embedding
-        |
-        v
-Lấy trung bình từng phần tử
-        |
-        v
-Chuẩn hóa kết quả lần nữa
-```
+Khi đăng nhập, mỗi frame được kiểm tra và so sánh độc lập. Một frame lỗi không dừng hai frame còn lại. Hệ thống chỉ đăng nhập khi ít nhất 2/3 frame cùng nhận ra một Student.
 
-Kết quả cuối là một embedding đại diện. Hai embedding được so bằng cosine similarity: càng gần `1` thì càng giống nhau.
+Hai embedding được so bằng cosine similarity: càng gần `1` thì càng giống nhau.
 
 ## 6. Flow đăng ký hoặc thay Face ID
 
@@ -148,9 +140,9 @@ POST /register/{sessionId}/confirm
        |
 Gộp 3 embedding
        |
-Kiểm tra trùng với Student khác
+Kiểm tra trùng với mọi Face ID đang hoạt động
        |
-Transaction thay Face ID trong SQL Server
+Lưu credential hoặc trả FaceAlreadyRegistered
 ```
 
 Chi tiết:
@@ -161,15 +153,10 @@ Chi tiết:
 4. Mỗi request frame dùng `multipart/form-data` với field `frame`.
 5. Embedding hợp lệ được giữ trong RAM; ảnh được dispose sau khi xử lý.
 6. Confirm chỉ chạy khi đủ 3 embedding.
-7. Nếu similarity với Face ID của Student khác đạt `DuplicateThreshold`, hệ thống trả conflict.
-8. Nếu Student đã có Face ID, flow được coi là **replace**:
-   - soft-delete bản cũ;
-   - đặt embedding cũ thành `NULL`;
-   - tạo bản mới trong cùng transaction.
-9. Nếu lưu bản mới thất bại, transaction rollback và Face ID cũ vẫn còn.
-10. Session chỉ bị xóa sau khi lưu thành công.
-
-Duplicate protection cố ý bỏ qua Face ID của chính Student hiện tại để cho phép thay Face ID.
+7. Embedding mới được so với toàn bộ Face ID đang hoạt động, bao gồm Face ID hiện tại của chính Student.
+8. Nếu similarity đạt `DuplicateThreshold`, backend giữ credential cũ và trả HTTP `409` với code `FaceAlreadyRegistered`.
+9. Muốn đăng ký lại cùng khuôn mặt, Student phải xóa Face ID cũ trước.
+10. Nếu không trùng và Student đang có một credential khác, repository thay credential trong transaction; nếu lưu bản mới thất bại thì credential cũ vẫn còn.
 
 ## 7. Flow Face Login
 
@@ -184,11 +171,10 @@ Field: request (đúng 3 file)
 Flow:
 
 1. Backend yêu cầu đúng 3 ảnh mới; 3 ảnh lúc đăng ký không được dùng lại tự động.
-2. Mỗi ảnh đi qua YuNet, quality check và SFace.
-3. Ba embedding được gộp thành một embedding đại diện.
-4. Repository lấy tất cả Face ID Student đang hoạt động có cùng model, version và số chiều.
-5. Backend tính cosine similarity và xếp hạng từ cao xuống thấp.
-6. Chỉ đăng nhập khi:
+2. Cả ba frame luôn được xử lý độc lập qua YuNet, quality check và SFace.
+3. Frame lỗi nhận status riêng nhưng không làm dừng các frame còn lại.
+4. Với từng embedding hợp lệ, backend xếp hạng tất cả Face ID tương thích.
+5. Mỗi frame chỉ được tính là match khi:
 
 ```text
 top1 >= MatchThreshold
@@ -196,7 +182,9 @@ và
 top1 - top2 >= MinMargin
 ```
 
-Nếu chỉ có một Face ID thì chỉ kiểm tra `MatchThreshold`. Khi thành công, backend lấy đúng Student và dùng flow JWT hiện có.
+6. Ít nhất 2/3 frame phải cùng match một Student. Nếu chỉ có một credential thì frame đó chỉ cần đạt `MatchThreshold`.
+7. Khi thành công, backend dùng flow JWT hiện có và trả thêm `faceFrames` để frontend biết status từng frame.
+8. Khi thất bại, `ProblemDetails` trả code `FaceVerificationFailed` cùng mảng `frames`.
 
 Log so sánh có dạng:
 
@@ -210,10 +198,13 @@ MinMargin=0.0500
 Các lý do từ chối thường gặp:
 
 ```text
-FrameValidationFailed
+NoFaceDetected
+MultipleFacesDetected
+TooBlurry
 NoCompatibleCredential
 BelowMatchThreshold
 InsufficientMargin
+InsufficientConsensus
 MatchedStudentUnavailable
 ```
 
@@ -381,7 +372,7 @@ Sau khi sửa code, phải dừng app đang chạy và chạy lại `dotnet run`
 - Xóa Face ID không thu hồi JWT đã cấp.
 - Session đang làm dở mất khi backend restart.
 - Hiện cùng một file có thể được tính là nhiều frame hợp lệ.
-- Đăng ký lại của cùng Student được hiểu là replace, không phải duplicate.
+- Đăng ký lại cùng khuôn mặt trả `FaceAlreadyRegistered`; phải xóa Face ID cũ trước.
 - Ảnh gốc không được lưu nên đổi model phải đăng ký Face ID lại.
 
 ## 15. Publish lên Windows VM

@@ -55,6 +55,19 @@ public sealed class FaceCredentialService(
             request.Password,
             cancellationToken);
 
+        var existingCredential =
+            await faceCredentialRepository.GetActiveByUserIdAsync(
+                userId,
+                cancellationToken);
+
+        if (existingCredential is not null)
+        {
+            Logger.Warn(
+                $"Face registration start rejected Reason={FaceAlreadyRegisteredException.ErrorCode} " +
+                $"UserId={userId} ExistingCredentialId={existingCredential.Id}");
+            throw new FaceAlreadyRegisteredException();
+        }
+
         var response = faceRegisterSessionService.StartSession(userId);
         Logger.Info(
             $"Face registration started UserId={userId} SessionId={response.SessionId}");
@@ -81,19 +94,23 @@ public sealed class FaceCredentialService(
             return currentStatus;
         }
 
-        var embedding = await faceRecognitionService.TryCreateEmbeddingAsync(
-            frame,
-            cancellationToken);
+        var embeddingResult =
+            await faceRecognitionService.TryCreateEmbeddingAsync(
+                frame,
+                cancellationToken);
 
-        if (embedding is null)
+        if (!embeddingResult.Success)
         {
-            return currentStatus;
+            return faceRegisterSessionService.GetFrameStatus(
+                sessionId,
+                userId,
+                embeddingResult.Status);
         }
 
         var response = faceRegisterSessionService.AddEmbedding(
             sessionId,
             userId,
-            embedding);
+            embeddingResult.Embedding!);
         Logger.Info(
             $"Face frame accepted UserId={userId} SessionId={sessionId} " +
             $"AcceptedCount={response.AcceptedCount} RequiredCount={response.RequiredCount}");
@@ -116,28 +133,55 @@ public sealed class FaceCredentialService(
                 "An active Student account is required.");
         }
 
+        for (var firstIndex = 0; firstIndex < embeddings.Count - 1; firstIndex++)
+        {
+            for (var secondIndex = firstIndex + 1; secondIndex < embeddings.Count; secondIndex++)
+            {
+                var similarity = FaceRecognitionService.CosineSimilarity(
+                    embeddings[firstIndex],
+                    embeddings[secondIndex]);
+
+                if (similarity >= options.MatchThreshold)
+                {
+                    continue;
+                }
+
+                faceRegisterSessionService.CancelSession(sessionId, userId);
+                Logger.Warn(
+                    $"Face registration rejected Reason={InconsistentFaceFramesException.ErrorCode} " +
+                    $"UserId={userId} FirstFrame={firstIndex + 1} " +
+                    $"SecondFrame={secondIndex + 1} Similarity={similarity:F4} " +
+                    $"ConsistencyThreshold={options.MatchThreshold:F4}");
+                throw new InconsistentFaceFramesException();
+            }
+        }
+
         var representativeEmbedding =
             faceRecognitionService.CreateRepresentativeEmbedding(embeddings);
 
-        var otherCredentials =
-            await faceCredentialRepository.GetActiveForModelExceptUserAsync(
+        var activeCredentials =
+            await faceCredentialRepository.GetActiveForModelAsync(
                 faceRecognitionService.ModelName,
                 faceRecognitionService.ModelVersion,
                 representativeEmbedding.Length,
-                userId,
                 cancellationToken);
 
-        foreach (var otherCredential in otherCredentials)
+        foreach (var existingCredential in activeCredentials)
         {
-            var otherEmbedding = DeserializeEmbedding(otherCredential);
+            var existingEmbedding = DeserializeEmbedding(existingCredential);
             var similarity = FaceRecognitionService.CosineSimilarity(
                 representativeEmbedding,
-                otherEmbedding);
+                existingEmbedding);
 
             if (similarity >= options.DuplicateThreshold)
             {
-                throw new ConflictException(
-                    "This face is already registered to another account.");
+                faceRegisterSessionService.CancelSession(sessionId, userId);
+                Logger.Warn(
+                    $"Face registration rejected Reason={FaceAlreadyRegisteredException.ErrorCode} " +
+                    $"UserId={userId} ExistingUserId={existingCredential.UserId} " +
+                    $"Similarity={similarity:F4} " +
+                    $"DuplicateThreshold={options.DuplicateThreshold:F4}");
+                throw new FaceAlreadyRegisteredException();
             }
         }
 

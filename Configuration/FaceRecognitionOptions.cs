@@ -30,6 +30,10 @@ public sealed class FaceRecognitionOptions : IValidatableObject
     [Range(1, 5000)]
     public int DetectionTopK { get; set; }
 
+    [Range(320, 4096)]
+    public int DetectionMaxLongEdge { get; set; } = 640;
+
+
     [Range(0.01, 1.0)]
     public double MinimumFaceWidthRatio { get; set; }
 

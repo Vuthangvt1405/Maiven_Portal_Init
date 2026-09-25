@@ -1,3 +1,4 @@
+using Maiven_Portal_Managment.Common;
 using Maiven_Portal_Managment.Dtos.Response;
 using Maiven_Portal_Managment.Exceptions;
 
@@ -76,13 +77,17 @@ public sealed class FaceRegisterSessionService
             return new FaceFrameResponse
             {
                 Accepted = true,
+                Status = FaceFrameStatus.Success,
                 AcceptedCount = session.Embeddings.Count,
                 RequiredCount = RequiredFrameCount
             };
         }
     }
 
-    public FaceFrameResponse GetFrameStatus(Guid sessionId, long userId)
+    public FaceFrameResponse GetFrameStatus(
+        Guid sessionId,
+        long userId,
+        FaceFrameStatus status = FaceFrameStatus.Success)
     {
         lock (syncRoot)
         {
@@ -91,6 +96,7 @@ public sealed class FaceRegisterSessionService
             return new FaceFrameResponse
             {
                 Accepted = false,
+                Status = status,
                 AcceptedCount = session.Embeddings.Count,
                 RequiredCount = RequiredFrameCount
             };
