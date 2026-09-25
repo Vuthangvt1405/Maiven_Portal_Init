@@ -13,6 +13,11 @@ obj/
 Logs/*.log
 Logs/*.log.*
 
+# Local face-recognition model files are supplied during setup/deployment.
+Models/*.onnx
+
+.fake
+
 # Locally uploaded pictures (served from wwwroot, per-environment data)
 wwwroot/uploads/
 

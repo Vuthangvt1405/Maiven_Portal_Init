@@ -48,6 +48,39 @@ public sealed class AuthRepository(AppDbContext dbContext)
         };
     }
 
+    public async Task<AuthAccount?> FindByUserIdAsync(
+        long userId,
+        CancellationToken cancellationToken)
+    {
+        var result = await dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => new
+            {
+                User = user,
+                RoleAssignments = user.UserRoles
+                    .Select(userRole => new AuthRoleAssignment
+                    {
+                        RoleUserId = userRole.Id,
+                        RoleCode = userRole.Role.Code
+                    })
+                    .ToArray()
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (result is null)
+        {
+            return null;
+        }
+
+        return new AuthAccount
+        {
+            User = result.User,
+            PasswordHash = result.User.PasswordHash,
+            RoleAssignments = result.RoleAssignments
+        };
+    }
+
     public async Task<Role?> GetRoleByCodeAsync(
         string roleCode,
         CancellationToken cancellationToken)

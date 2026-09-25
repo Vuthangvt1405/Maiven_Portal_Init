@@ -106,6 +106,23 @@ public sealed class GlobalExceptionMiddleware
         };
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
 
+        if (!string.IsNullOrWhiteSpace(appException?.Code))
+        {
+            problemDetails.Extensions["code"] = appException.Code;
+        }
+
+        if (exception is FaceLoginFailedException faceLoginException)
+        {
+            problemDetails.Extensions["frames"] = faceLoginException.Frames
+                .Select(frame => new
+                {
+                    frame.FrameNumber,
+                    Status = frame.Status.ToString(),
+                    frame.Accepted
+                })
+                .ToArray();
+        }
+
         context.Response.Clear();
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json";
