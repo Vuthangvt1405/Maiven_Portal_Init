@@ -61,9 +61,9 @@ public sealed class EnrollmentService(EnrollmentRepository repository)
     public Task<EnrollmentResponse> UpdateAsync(long id, UpdateEnrollmentRequest request, CancellationToken cancellationToken) =>
         SaveAsync(id, request.UserId, request.SectionId, cancellationToken);
 
-    public async Task DeleteAsync(long id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(long studentUserRoleId, long sectionId, CancellationToken cancellationToken)
     {
-        if (!await repository.DeleteAsync(id, cancellationToken))
+        if (!await repository.DeleteAsync(studentUserRoleId, sectionId, cancellationToken))
             throw new NotFoundException("The enrollment could not be found.");
     }
 
