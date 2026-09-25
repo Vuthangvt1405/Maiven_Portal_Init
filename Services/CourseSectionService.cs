@@ -252,6 +252,64 @@ public sealed class CourseSectionService(
         return (items, result.TotalItems);
     }
 
+    public async Task<StudentGpaResponse> StudentGetGpaAsync(
+        long studentUserRoleId,
+        StudentGpaQueryParameters parameters,
+        CancellationToken cancellationToken)
+    {
+        var enrollments = await courseSectionRepository.GetEnrollmentsForStudentGpaAsync(
+            studentUserRoleId,
+            cancellationToken);
+
+        var academicYears = enrollments
+            .GroupBy(enrollment => enrollment.Section.Semester.AcademicYearId)
+            .OrderBy(group => group.First().Section.Semester.AcademicYear.StartDate)
+            .ToArray();
+
+        decimal cumulativeWeightedGradePoints = 0m;
+        var cumulativeCompletedCredits = 0;
+        var responses = new List<AcademicYearGpaResponse>();
+
+        foreach (var academicYear in academicYears)
+        {
+            var semesters = academicYear
+                .GroupBy(enrollment => enrollment.Section.SemesterId)
+                .OrderBy(group => group.First().Section.Semester.StartDate)
+                .Select(semester => BuildSemesterGpa(semester.ToArray()))
+                .ToArray();
+
+            foreach (var enrollment in academicYear)
+            {
+                if (!TryGetCompletedCourse(enrollment, out var gradePoint, out var credits))
+                {
+                    continue;
+                }
+
+                cumulativeWeightedGradePoints += gradePoint * credits;
+                cumulativeCompletedCredits += credits;
+            }
+
+            var year = academicYear.First().Section.Semester.AcademicYear;
+            responses.Add(new AcademicYearGpaResponse
+            {
+                AcademicYearId = year.Id,
+                AcademicYearName = year.Name,
+                CumulativeGpa = CalculateGpa(cumulativeWeightedGradePoints, cumulativeCompletedCredits),
+                CumulativeCompletedCredits = cumulativeCompletedCredits,
+                Semesters = semesters
+            });
+        }
+
+        if (parameters.AcademicYearId.HasValue)
+        {
+            responses = responses
+                .Where(response => response.AcademicYearId == parameters.AcademicYearId.Value)
+                .ToList();
+        }
+
+        return new StudentGpaResponse { AcademicYears = responses };
+    }
+
 
 
     public async Task<CourseSectionDetailResponse?> TeacherGetCourseSectionDetailsAsync(
@@ -366,6 +424,55 @@ public sealed class CourseSectionService(
                 ResultStatus = enrollment.CourseResult.ResultStatus
             }
     };
+
+    private static SemesterGpaResponse BuildSemesterGpa(IReadOnlyList<Enrollment> enrollments)
+    {
+        decimal weightedGradePoints = 0m;
+        var completedCredits = 0;
+
+        foreach (var enrollment in enrollments)
+        {
+            if (!TryGetCompletedCourse(enrollment, out var gradePoint, out var credits))
+            {
+                continue;
+            }
+
+            weightedGradePoints += gradePoint * credits;
+            completedCredits += credits;
+        }
+
+        var semester = enrollments[0].Section.Semester;
+        return new SemesterGpaResponse
+        {
+            SemesterId = semester.Id,
+            SemesterName = semester.Name,
+            Gpa = CalculateGpa(weightedGradePoints, completedCredits),
+            CompletedCredits = completedCredits
+        };
+    }
+
+    private static bool TryGetCompletedCourse(Enrollment enrollment, out decimal gradePoint, out int credits)
+    {
+        gradePoint = 0m;
+        credits = 0;
+
+        if (enrollment.CourseResult is null ||
+            enrollment.CourseResult.IsDeleted ||
+            enrollment.CourseResult.GradePoint is not decimal resultGradePoint ||
+            enrollment.Section.Course.Credits <= 0)
+        {
+            return false;
+        }
+
+        gradePoint = resultGradePoint;
+        credits = enrollment.Section.Course.Credits;
+        return true;
+    }
+
+    private static decimal? CalculateGpa(decimal weightedGradePoints, int completedCredits) =>
+        completedCredits == 0
+            ? null
+            : decimal.Round(weightedGradePoints / completedCredits, 2, MidpointRounding.AwayFromZero);
 
 
 

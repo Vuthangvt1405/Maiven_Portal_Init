@@ -356,4 +356,28 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         return (items, totalItems);
     }
 
+    public async Task<IReadOnlyList<Enrollment>> GetEnrollmentsForStudentGpaAsync(
+        long studentUserRoleId,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Enrollments
+            .AsNoTracking()
+            .Include(enrollment => enrollment.Section)
+                .ThenInclude(section => section.Course)
+            .Include(enrollment => enrollment.Section)
+                .ThenInclude(section => section.Semester)
+                    .ThenInclude(semester => semester.AcademicYear)
+            .Include(enrollment => enrollment.CourseResult)
+            .Where(enrollment => !enrollment.IsDeleted
+                && enrollment.StudentUserRoleId == studentUserRoleId
+                && !enrollment.StudentUserRole.IsDeleted
+                && !enrollment.Section.IsDeleted)
+            .AsSplitQuery()
+            .OrderBy(enrollment => enrollment.Section.Semester.AcademicYear.StartDate)
+            .ThenBy(enrollment => enrollment.Section.Semester.StartDate)
+            .ThenBy(enrollment => enrollment.SectionId)
+            .ThenBy(enrollment => enrollment.Id)
+            .ToListAsync(cancellationToken);
+    }
+
 }

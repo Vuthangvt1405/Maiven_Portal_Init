@@ -197,6 +197,31 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         });
     }
 
+    /// <summary>
+    /// Retrieves semester GPA and cumulative GPA by academic year for the authenticated student.
+    /// A cumulative GPA includes all completed course results through that academic year.
+    /// </summary>
+    [Authorize(Roles = SystemRoles.Student.Code)]
+    [HttpGet("student/me/gpa")]
+    public async Task<ActionResult<StudentGpaResponse>> StudentGetGpa(
+        [FromQuery] StudentGpaQueryParameters parameters,
+        CurrentUserContext currentStudentContext,
+        CancellationToken cancellationToken)
+    {
+        var studentUserRoleId = currentStudentContext.RoleUserId;
+        if (studentUserRoleId is null)
+        {
+            return BadRequest("Invalid student user role ID.");
+        }
+
+        var response = await courseSectionService.StudentGetGpaAsync(
+            studentUserRoleId.Value,
+            parameters,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
 
     /// <summary>Updates a course section.</summary>
     [HttpPut("course-sections/{courseSectionId:long}")]
