@@ -38,12 +38,6 @@ public sealed class StudentScoreService(
             throw new UnauthorizedException("You are not assigned to this course section.");
         }
 
-        if (section.Status != Data.Entities.Enums.CourseSectionStatus.COMPLETED)
-        {
-            throw new BadRequestException(
-                "Scores can only be entered after the course section is completed.");
-        }
-
         var updatedScore = await studentScoreRepository.UpdateScoreAsync(
             studentScore,
             request.Score,

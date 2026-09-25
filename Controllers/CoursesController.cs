@@ -11,6 +11,7 @@ namespace Maiven_Portal_Managment.Controllers;
 [Route("api/courses")]
 public sealed class CoursesController(CourseService courseService) : ControllerBase
 {
+    /// <summary>Creates a course.</summary>
     [HttpPost]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<CourseResponse>> Create(
@@ -25,6 +26,7 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
             response);
     }
 
+    /// <summary>Retrieves a paginated list of courses.</summary>
     [HttpGet]
     public async Task<ActionResult<PagedResponse<CourseResponse>>> GetAll(
         [FromQuery] CourseQueryParameters parameters,
@@ -52,6 +54,7 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
         return Ok(response);
     }
 
+    /// <summary>Retrieves a course by ID.</summary>
     [HttpGet("{courseId:long}")]
     public async Task<ActionResult<CourseResponse>> GetById(
         long courseId,
@@ -61,6 +64,7 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
         return Ok(response);
     }
 
+    /// <summary>Updates a course.</summary>
     [HttpPut("{courseId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<CourseResponse>> Update(
@@ -75,6 +79,7 @@ public sealed class CoursesController(CourseService courseService) : ControllerB
         return Ok(response);
     }
 
+    /// <summary>Deletes a course.</summary>
     [HttpDelete("{courseId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<IActionResult> Delete(

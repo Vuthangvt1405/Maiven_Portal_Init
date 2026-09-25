@@ -11,6 +11,7 @@ public sealed class SemesterRepository(AppDbContext dbContext)
     {
         var semesters = await dbContext.Semesters
             .AsNoTracking()
+            .Include(semester => semester.AcademicYear)
             .OrderByDescending(semester => semester.StartDate)
             .ThenByDescending(semester => semester.Id)
             .ToListAsync(cancellationToken);

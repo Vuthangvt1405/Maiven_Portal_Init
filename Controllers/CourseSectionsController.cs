@@ -13,9 +13,10 @@ namespace Maiven_Portal_Managment.Controllers;
 public sealed class CourseSectionsController(CourseSectionService courseSectionService) : ControllerBase
 {
 
+    /// <summary>Retrieves a paginated list of course sections.</summary>
     [HttpGet("course-sections")]
-    [ProducesResponseType<PagedResponse<CourseSectionResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> GetAll(
+    [ProducesResponseType<PagedResponse<CourseSectionWithEnrollmentCount>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<CourseSectionWithEnrollmentCount>>> GetAll(
         [FromQuery] CourseSectionQueryParameters parameters,
         CancellationToken cancellationToken)
     {
@@ -25,7 +26,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
         var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
 
-        var response = new PagedResponse<CourseSectionResponse>
+        var response = new PagedResponse<CourseSectionWithEnrollmentCount>
         {
             Items = result.Items,
             PageNumber = pageNumber,
@@ -37,6 +38,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         return Ok(response);
     }
 
+    /// <summary>Creates a course section.</summary>
     [HttpPost("course-sections")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<CourseSectionResponse>> Create(
@@ -51,6 +53,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
             response);
     }
 
+    /// <summary>Retrieves a course section by ID for an administrator.</summary>
     [Authorize(Roles = SystemRoles.Admin.Code)]
     [HttpGet("course-secions/{courseSectionId:long}")]
     public async Task<ActionResult<CourseSectionResponse>> AdminGetById(
@@ -61,9 +64,10 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         return Ok(response);
     }
 
+    /// <summary>Retrieves a paginated list of course sections assigned to the authenticated teacher.</summary>
     [Authorize(Roles = SystemRoles.Teacher.Code)]
     [HttpGet("teachers/me/course-sections")]
-    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> TeacherGetAll(
+    public async Task<ActionResult<PagedResponse<CourseSectionWithEnrollmentCount>>> TeacherGetAll(
         [FromQuery] CourseSectionQueryParameters parameters,
         CurrentUserContext currentTeacherContext,
         CancellationToken cancellationToken)
@@ -83,7 +87,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
         var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
 
-        var response = new PagedResponse<CourseSectionResponse>
+        var response = new PagedResponse<CourseSectionWithEnrollmentCount>
         {
             Items = result.Items,
             PageNumber = pageNumber,
@@ -94,6 +98,9 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
 
         return Ok(response);
     }
+    /// <summary>
+    /// Gets a course section owned by the authenticated teacher, including its enrolled students and scores.
+    /// </summary>
     [Authorize(Roles = SystemRoles.Teacher.Code)]
     [HttpGet("teachers/me/course-sections/{courseSectionId:long}")]
     public async Task<ActionResult<CourseSectionDetailResponse>> TeacherGetSectionDetail(
@@ -122,9 +129,10 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         return Ok(result);
     }
 
+    /// <summary>Retrieves a paginated list of course sections for the authenticated student.</summary>
     [Authorize(Roles = SystemRoles.Student.Code)]
     [HttpGet("student/me/course-sections")]
-    public async Task<ActionResult<PagedResponse<CourseSectionResponse>>> StudentGetAll(
+    public async Task<ActionResult<PagedResponse<CourseSectionWithEnrollmentCount>>> StudentGetAll(
         [FromQuery] CourseSectionQueryParameters parameters,
         CurrentUserContext currentStudentContext,
         CancellationToken cancellationToken)
@@ -144,7 +152,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         var pageSize = parameters.PageSize < 1 ? 10 : Math.Min(parameters.PageSize, 100);
         var totalPages = (int)Math.Ceiling(result.TotalItems / (double)pageSize);
 
-        var response = new PagedResponse<CourseSectionResponse>
+        var response = new PagedResponse<CourseSectionWithEnrollmentCount>
         {
             Items = result.Items,
             PageNumber = pageNumber,
@@ -156,6 +164,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
         return Ok(response);
     }
 
+    /// <summary>Retrieves paginated course results for the authenticated student.</summary>
     [Authorize(Roles = SystemRoles.Student.Code)]
     [HttpGet("student/me/course-results")]
     public async Task<ActionResult<PagedResponse<StudentCourseResultResponse>>> StudentGetResults(
@@ -189,6 +198,7 @@ public sealed class CourseSectionsController(CourseSectionService courseSectionS
     }
 
 
+    /// <summary>Updates a course section.</summary>
     [HttpPut("course-sections/{courseSectionId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<CourseSectionResponse>> Update(

@@ -4,7 +4,7 @@ public sealed class SemesterResponse
 {
     public long Id { get; init; }
 
-    public long AcademicYearId { get; init; }
+    public AcademicYearResponse AcademicYear { get; init; } = null!;
 
     public string Name { get; init; } = string.Empty;
 

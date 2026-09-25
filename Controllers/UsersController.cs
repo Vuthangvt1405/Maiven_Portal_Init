@@ -13,6 +13,7 @@ namespace Maiven_Portal_Managment.Controllers;
 [Authorize]
 public sealed class UsersController(UserService userService) : ControllerBase
 {
+    /// <summary>Retrieves the authenticated user's profile.</summary>
     [HttpGet("me")]
     public async Task<ActionResult<CurrentUserResponse>> Me()
     {
@@ -20,6 +21,7 @@ public sealed class UsersController(UserService userService) : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>Retrieves a paginated list of user profiles.</summary>
     [HttpGet("/api/admin/users")]
     public async Task<ActionResult<PagedResponse<UserProfileResponse>>> GetAllUser(
         [FromQuery] UserQueryParameters parameters,
@@ -41,6 +43,7 @@ public sealed class UsersController(UserService userService) : ControllerBase
          return Ok(response);
     }
 
+    /// <summary>Retrieves a user profile by ID.</summary>
     [HttpGet("/api/admin/users/{userId:long}")]
     public async Task<ActionResult<UserProfileResponse>> GetUserById(
         long userId,
@@ -50,6 +53,7 @@ public sealed class UsersController(UserService userService) : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>Deletes a user account by ID.</summary>
     [HttpDelete("/api/admin/users/{userId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult> DeleteUserById(
@@ -60,6 +64,18 @@ public sealed class UsersController(UserService userService) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Uploads the authenticated user's avatar picture to local storage.</summary>
+    [HttpPost("me/avatar")]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<ActionResult<AvatarUploadResponse>> UploadAvatar(
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        var response = await userService.UpdateCurrentUserAvatarAsync(file, cancellationToken);
+        return Ok(new AvatarUploadResponse(response.AvatarUrl ?? string.Empty));
+    }
+
+    /// <summary>Updates the authenticated user's profile.</summary>
     [HttpPut("profile")]
     public async Task<ActionResult<UserProfileResponse>> UpdateProfile(
         [FromBody] UpdateUserProfileRequest request,

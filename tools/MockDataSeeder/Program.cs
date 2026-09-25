@@ -5,18 +5,6 @@ using MockDataSeederTool;
 
 Env.NoClobber().TraversePath().Load();
 
-var environmentName =
-    Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ??
-    Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-
-if (!string.Equals(environmentName, "Development", StringComparison.OrdinalIgnoreCase))
-{
-    Console.Error.WriteLine(
-        "Mock data seeding is restricted to the Development environment. " +
-        "Set DOTNET_ENVIRONMENT or ASPNETCORE_ENVIRONMENT to Development.");
-    return 1;
-}
-
 var connectionString =
     Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -79,6 +67,7 @@ catch (Exception exception)
 {
     Console.Error.WriteLine(
         $"Mock data seeding failed ({exception.GetType().Name}). " +
-        "Check the development database configuration and application logs.");
+        "Check the database configuration and application logs.");
+    Console.Error.WriteLine(exception);
     return 1;
 }

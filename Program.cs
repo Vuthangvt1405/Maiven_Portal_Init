@@ -11,6 +11,7 @@ using Maiven_Portal_Managment.Repository;
 using Maiven_Portal_Managment.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi;
 
 var environmentName =
@@ -86,6 +87,7 @@ builder.Services.AddScoped<ChangeCourseSectionService>();
 builder.Services.AddScoped<FaceCredentialService>();
 builder.Services.AddSingleton<FaceRecognitionService>();
 builder.Services.AddSingleton<FaceRegisterSessionService>();
+builder.Services.AddScoped<LocalFileStorageService>();
 
 builder.Services
     .AddOptions<FaceRecognitionOptions>()
@@ -105,6 +107,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlFilePath = Path.Combine(AppContext.BaseDirectory, xmlFileName);
+    options.IncludeXmlComments(xmlFilePath);
+
     options.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.Http,
@@ -129,6 +135,18 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseCors("AllowAll");
+
+var webRootPath = app.Environment.WebRootPath;
+if (string.IsNullOrWhiteSpace(webRootPath))
+{
+    webRootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+}
+Directory.CreateDirectory(webRootPath);
+Directory.CreateDirectory(Path.Combine(webRootPath, "uploads", "avatars"));
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRootPath)
+});
 
 if (app.Environment.IsDevelopment())
 {

@@ -10,6 +10,7 @@ namespace Maiven_Portal_Managment.Controllers;
 [Route("api/auth")]
 public sealed class AuthController(AuthService authService) : ControllerBase
 {
+    /// <summary>Registers a new student account.</summary>
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponse>> Register(
@@ -20,6 +21,7 @@ public sealed class AuthController(AuthService authService) : ControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    /// <summary>Authenticates a user and returns an access token.</summary>
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponse>> Login(
@@ -30,6 +32,7 @@ public sealed class AuthController(AuthService authService) : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>Authenticates an administrator and returns an access token.</summary>
     [HttpPost("admin/login")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponse>> LoginAdmin(

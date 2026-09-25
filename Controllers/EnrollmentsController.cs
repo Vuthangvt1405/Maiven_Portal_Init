@@ -15,6 +15,7 @@ public sealed class EnrollmentsController(
     EnrollmentService enrollmentService,
     CurrentUserContext currentUserContext) : ControllerBase
 {
+    /// <summary>Retrieves a paginated list of enrollments.</summary>
     [HttpGet]
     public async Task<ActionResult<PagedResponse<EnrollmentResponse>>> GetAll(
         [FromQuery] EnrollmentQueryParameters parameters, CancellationToken cancellationToken)
@@ -29,10 +30,12 @@ public sealed class EnrollmentsController(
         });
     }
 
+    /// <summary>Retrieves an enrollment by ID.</summary>
     [HttpGet("{enrollmentId:long}")]
     public async Task<ActionResult<EnrollmentResponse>> GetById(long enrollmentId, CancellationToken cancellationToken) =>
         Ok(await enrollmentService.GetByIdAsync(enrollmentId, cancellationToken));
 
+    /// <summary>Creates an enrollment.</summary>
     [HttpPost]
     public async Task<ActionResult<EnrollmentResponse>> Create(CreateEnrollmentRequest request, CancellationToken cancellationToken)
     {
@@ -42,6 +45,7 @@ public sealed class EnrollmentsController(
         return CreatedAtAction(nameof(GetById), new { enrollmentId = response.Id }, response);
     }
 
+    /// <summary>Creates multiple enrollments in one request.</summary>
     [HttpPost("batch")]
     public async Task<ActionResult<EnrollmentBatchResponse>> CreateBatch(
         CreateEnrollmentsRequest request,
@@ -52,10 +56,12 @@ public sealed class EnrollmentsController(
         return Ok(await enrollmentService.CreateBatchAsync(userId, request, cancellationToken));
     }
 
+    /// <summary>Updates an enrollment.</summary>
     [HttpPut("{enrollmentId:long}")]
     public async Task<ActionResult<EnrollmentResponse>> Update(long enrollmentId, UpdateEnrollmentRequest request, CancellationToken cancellationToken) =>
         Ok(await enrollmentService.UpdateAsync(enrollmentId, request, cancellationToken));
 
+    /// <summary>Deletes an enrollment.</summary>
     [HttpDelete("{enrollmentId:long}")]
     public async Task<IActionResult> Delete(long enrollmentId, CancellationToken cancellationToken)
     {

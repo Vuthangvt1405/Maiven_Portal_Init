@@ -13,6 +13,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
     {
         var entity = await dbContext.CourseSections
             .AsNoTracking()
+            .Include(s => s.Course)
             .SingleOrDefaultAsync(
                 s => s.Id == sectionId && !s.IsDeleted,
                 cancellationToken);
@@ -25,6 +26,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         CancellationToken cancellationToken)
     {
         var entity = await dbContext.CourseSections
+            .Include(s => s.Course)
             .SingleOrDefaultAsync(
                 s => s.Id == sectionId && !s.IsDeleted,
                 cancellationToken);
@@ -51,24 +53,32 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         return entity;
     }
 
-    public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedAsync(
-        long? courseId,
-        long? semesterId,
-        long? teacherUserRoleId,
-        string? sectionCode,
-        WeekDay? dayOfWeek,
-        CourseSectionStatus? status,
-        int pageNumber,
-        int pageSize,
-        CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<(CourseSection Section, int EnrollmentCount)> Items, int TotalItems)> GetPagedAsync(
+    long? courseId,
+    string? courseName,
+    long? semesterId,
+    long? teacherUserRoleId,
+    string? sectionCode,
+    WeekDay? dayOfWeek,
+    CourseSectionStatus? status,
+    int pageNumber,
+    int pageSize,
+    CancellationToken cancellationToken)
     {
         var query = dbContext.CourseSections
             .AsNoTracking()
+            .Include(s => s.Course)
             .Where(s => !s.IsDeleted);
 
         if (courseId.HasValue)
         {
             query = query.Where(s => s.CourseId == courseId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(courseName))
+        {
+            var trimmedCourseName = courseName.Trim();
+            query = query.Where(s => s.Course.CourseName.Contains(trimmedCourseName));
         }
 
         if (semesterId.HasValue)
@@ -98,18 +108,28 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
 
         var totalItems = await query.CountAsync(cancellationToken);
 
-        var entities = await query
+        var rawItems = await query
             .OrderBy(s => s.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .Select(s => new
+            {
+                Section = s,
+                EnrollmentCount = s.Enrollments.Count(e => !e.IsDeleted)
+            })
             .ToListAsync(cancellationToken);
 
-        return (entities, totalItems);
+        var items = rawItems
+            .Select(x => (x.Section, x.EnrollmentCount))
+            .ToList();
+
+        return (items, totalItems);
     }
 
-    public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedForTeacherAsync(
+    public async Task<(IReadOnlyList<(CourseSection Section, int EnrollmentCount)> Items, int TotalItems)> GetPagedForTeacherAsync(
         long teacherUserRoleId,
         long? courseId,
+        string? courseName,
         long? semesterId,
         string? sectionCode,
         WeekDay? dayOfWeek,
@@ -120,11 +140,13 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
     {
         var query = dbContext.CourseSections
             .AsNoTracking()
+            .Include(s => s.Course)
             .Where(s => !s.IsDeleted && s.TeacherUserRoleId == teacherUserRoleId);
 
         return await ApplyFiltersAndPagingAsync(
             query,
             courseId,
+            courseName,
             semesterId,
             sectionCode,
             dayOfWeek,
@@ -134,9 +156,10 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
             cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> GetPagedForStudentAsync(
+    public async Task<(IReadOnlyList<(CourseSection Section, int EnrollmentCount)> Items, int TotalItems)> GetPagedForStudentAsync(
         long studentUserRoleId,
         long? courseId,
+        string? courseName,
         long? semesterId,
         string? sectionCode,
         WeekDay? dayOfWeek,
@@ -147,6 +170,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
     {
         var query = dbContext.CourseSections
             .AsNoTracking()
+            .Include(s => s.Course)
             .Where(s => !s.IsDeleted &&
                             s.Enrollments.Any(e => !e.IsDeleted
                                      && e.StudentUserRoleId == studentUserRoleId));
@@ -154,6 +178,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         return await ApplyFiltersAndPagingAsync(
             query,
             courseId,
+            courseName,
             semesterId,
             sectionCode,
             dayOfWeek,
@@ -163,9 +188,10 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
             cancellationToken);
     }
 
-    private static async Task<(IReadOnlyList<CourseSection> Items, int TotalItems)> ApplyFiltersAndPagingAsync(
+    private static async Task<(IReadOnlyList<(CourseSection Section, int EnrollmentCount)> Items, int TotalItems)> ApplyFiltersAndPagingAsync(
         IQueryable<CourseSection> query,
         long? courseId,
+        string? courseName,
         long? semesterId,
         string? sectionCode,
         WeekDay? dayOfWeek,
@@ -177,6 +203,12 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
         if (courseId.HasValue)
         {
             query = query.Where(s => s.CourseId == courseId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(courseName))
+        {
+            var trimmedCourseName = courseName.Trim();
+            query = query.Where(s => s.Course.CourseName.Contains(trimmedCourseName));
         }
 
         if (semesterId.HasValue)
@@ -201,13 +233,22 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
 
         var totalItems = await query.CountAsync(cancellationToken);
 
-        var entities = await query
+        var rawItems = await query
             .OrderBy(s => s.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .Select(s => new
+            {
+                Section = s,
+                EnrollmentCount = s.Enrollments.Count(e => !e.IsDeleted)
+            })
             .ToListAsync(cancellationToken);
 
-        return (entities, totalItems);
+        var items = rawItems
+            .Select(x => (x.Section, x.EnrollmentCount))
+            .ToList();
+
+        return (items, totalItems);
     }
 
     public async Task<CourseSection> AddAsync(
@@ -229,6 +270,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
     {
         var sectionEntity = await dbContext.CourseSections
             .AsNoTracking()
+            .Include(s => s.Course)
             .SingleOrDefaultAsync(
                 s => s.Id == sectionId && s.TeacherUserRoleId == teacherUserRoleId && !s.IsDeleted,
                 cancellationToken);
@@ -244,6 +286,7 @@ public sealed class CourseSectionRepository(AppDbContext dbContext)
                 .ThenInclude(userRole => userRole.User)
             .Include(e => e.StudentScores)
                 .ThenInclude(score => score.Component)
+            .Include(e => e.CourseResult)
             .Where(e => e.SectionId == sectionId && !e.IsDeleted && !e.StudentUserRole.IsDeleted);
 
         var totalItems = await enrollmentsQuery.CountAsync(cancellationToken);

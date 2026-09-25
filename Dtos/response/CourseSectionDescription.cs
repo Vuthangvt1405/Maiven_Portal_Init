@@ -1,10 +1,11 @@
-﻿using Maiven_Portal_Managment.Data.Entities.Enums;
+using Maiven_Portal_Managment.Data.Entities.Enums;
 
 namespace Maiven_Portal_Managment.Dtos.response;
 
-public sealed record CourseSectionResponse(
-    long Id,
+public sealed record CourseSectionDescription(
     CourseResponse Course,
+    long Id,
+    long CourseId,
     long SemesterId,
     long TeacherUserRoleId,
     string SectionCode,
@@ -12,9 +13,11 @@ public sealed record CourseSectionResponse(
     WeekDay DayOfWeek,
     int StartPeriod,
     int EndPeriod,
+    int EnrollmentCount,
     DateOnly StartDate,
     DateOnly EndDate,
     CourseSectionStatus Status,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
+

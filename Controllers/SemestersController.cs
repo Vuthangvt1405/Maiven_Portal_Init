@@ -11,6 +11,7 @@ namespace Maiven_Portal_Managment.Controllers;
 [Route("api/semesters")]
 public sealed class SemestersController(SemesterService semesterService) : ControllerBase
 {
+    /// <summary>Creates a semester.</summary>
     [HttpPost]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<SemesterResponse>> Create(
@@ -21,6 +22,7 @@ public sealed class SemestersController(SemesterService semesterService) : Contr
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    /// <summary>Retrieves all semesters.</summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<SemesterResponse>>> GetAll(
@@ -30,6 +32,7 @@ public sealed class SemestersController(SemesterService semesterService) : Contr
         return Ok(response);
     }
 
+    /// <summary>Updates a semester.</summary>
     [HttpPut("{semesterId:long}")]
     [Authorize(Roles = SystemRoles.Admin.Code)]
     public async Task<ActionResult<SemesterResponse>> Update(

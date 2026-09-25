@@ -17,3 +17,8 @@ Logs/*.log.*
 Models/*.onnx
 
 .fake
+
+# Locally uploaded pictures (served from wwwroot, per-environment data)
+wwwroot/uploads/
+
+.fake

@@ -13,6 +13,7 @@ namespace Maiven_Portal_Managment.Controllers;
 public sealed class AcademicYearsController(
     AcademicYearService academicYearService) : ControllerBase
 {
+    /// <summary>Creates an academic year.</summary>
     [HttpPost]
     public async Task<ActionResult<AcademicYearResponse>> Create(
         [FromBody] CreateAcademicYearRequest request,
@@ -22,6 +23,7 @@ public sealed class AcademicYearsController(
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    /// <summary>Retrieves all academic years.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AcademicYearResponse>>> GetAll(
         CancellationToken cancellationToken)
@@ -30,6 +32,7 @@ public sealed class AcademicYearsController(
         return Ok(response);
     }
 
+    /// <summary>Updates an academic year.</summary>
     [HttpPut("{academicYearId:long}")]
     public async Task<ActionResult<AcademicYearResponse>> Update(
         long academicYearId,

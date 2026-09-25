@@ -15,6 +15,7 @@ namespace Maiven_Portal_Managment.Controllers;
 public sealed class ChangeCourseSectionController(
     ChangeCourseSectionService changeCourseSectionService) : ControllerBase
 {
+    /// <summary>Marks a teacher-owned course section as completed.</summary>
     [HttpPatch("{sectionId:long}/completed")]
     public async Task<ActionResult<ChangeCourseSectionResponse>> ChangeCourseSectionComplete(
         long sectionId,

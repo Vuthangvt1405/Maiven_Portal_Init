@@ -32,11 +32,11 @@ public sealed class SemesterService(
             request.StartDate,
             request.EndDate);
 
-        await ValidateAcademicYearAsync(entity, cancellationToken);
+        var academicYear = await ValidateAcademicYearAsync(entity, cancellationToken);
         await ValidateConflictsAsync(entity, null, cancellationToken);
 
         var created = await semesterRepository.CreateAsync(entity, cancellationToken);
-        var response = ToResponse(created);
+        var response = ToResponse(created, academicYear);
         return response;
     }
 
@@ -44,7 +44,8 @@ public sealed class SemesterService(
         CancellationToken cancellationToken)
     {
         var semesters = await semesterRepository.GetAllAsync(cancellationToken);
-        var response = semesters.Select(ToResponse).ToArray();
+        var response = semesters.Select(semester =>
+            ToResponse(semester, semester.AcademicYear)).ToArray();
         return response;
     }
 
@@ -87,7 +88,9 @@ public sealed class SemesterService(
             request.EndDate);
         proposed.Id = semesterId;
 
-        await ValidateAcademicYearAsync(proposed, cancellationToken);
+        var proposedAcademicYear = await ValidateAcademicYearAsync(
+            proposed,
+            cancellationToken);
         await ValidateConflictsAsync(proposed, semesterId, cancellationToken);
 
         existing.AcademicYearId = proposed.AcademicYearId;
@@ -97,11 +100,11 @@ public sealed class SemesterService(
 
         await semesterRepository.SaveChangesAsync(cancellationToken);
 
-        var response = ToResponse(existing);
+        var response = ToResponse(existing, proposedAcademicYear);
         return response;
     }
 
-    private async Task ValidateAcademicYearAsync(
+    private async Task<AcademicYear> ValidateAcademicYearAsync(
         Semester entity,
         CancellationToken cancellationToken)
     {
@@ -123,6 +126,8 @@ public sealed class SemesterService(
         {
             throw new ConflictException(OutsideAcademicYearMessage);
         }
+
+        return academicYear;
     }
 
     private async Task ValidateConflictsAsync(
@@ -193,13 +198,27 @@ public sealed class SemesterService(
         };
     }
 
-    private static SemesterResponse ToResponse(Semester entity) => new()
+    private static SemesterResponse ToResponse(
+        Semester entity,
+        AcademicYear academicYear) => new()
     {
         Id = entity.Id,
-        AcademicYearId = entity.AcademicYearId,
+        AcademicYear = ToAcademicYearResponse(academicYear),
         Name = entity.Name,
         StartDate = entity.StartDate,
         EndDate = entity.EndDate,
+        CreatedAt = AsUtc(entity.CreatedAt),
+        UpdatedAt = AsUtc(entity.UpdatedAt)
+    };
+
+    private static AcademicYearResponse ToAcademicYearResponse(
+        AcademicYear entity) => new()
+    {
+        Id = entity.Id,
+        Name = entity.Name,
+        StartDate = entity.StartDate,
+        EndDate = entity.EndDate,
+        Status = entity.Status,
         CreatedAt = AsUtc(entity.CreatedAt),
         UpdatedAt = AsUtc(entity.UpdatedAt)
     };

@@ -3,7 +3,7 @@ namespace Maiven_Portal_Managment.Dtos.response;
 public sealed record CourseSectionDetailResponse(
     long Id,
     string? SectionCode,
-    long CourseId,
+    CourseResponse Course,
     long SemesterId,
     PagedResponse<StudentInCourseSectionResponse>? Students
 );
@@ -13,10 +13,12 @@ public sealed record StudentInCourseSectionResponse(
     long StudentUserRoleId,
     string FullName,
     string Email,
-    IReadOnlyList<StudentScoreDetailResponse> Scores
+    IReadOnlyList<StudentScoreDetailResponse> Scores,
+    StudentFinalResultResponse? FinalResult
 );
 
 public sealed record StudentScoreDetailResponse(
+    long ScoreId,
     long ComponentId,
     string ComponentName,
     decimal Weight,
