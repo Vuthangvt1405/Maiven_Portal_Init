@@ -61,11 +61,14 @@ public sealed class EnrollmentsController(
     public async Task<ActionResult<EnrollmentResponse>> Update(long enrollmentId, UpdateEnrollmentRequest request, CancellationToken cancellationToken) =>
         Ok(await enrollmentService.UpdateAsync(enrollmentId, request, cancellationToken));
 
-    /// <summary>Deletes an enrollment.</summary>
-    [HttpDelete("{enrollmentId:long}")]
-    public async Task<IActionResult> Delete(long enrollmentId, CancellationToken cancellationToken)
+    /// <summary>Deletes the authenticated student's enrollment from a course section.</summary>
+    [HttpDelete("{sectionId:long}")]
+    public async Task<IActionResult> Delete(long sectionId, CancellationToken cancellationToken)
     {
-        await enrollmentService.DeleteAsync(enrollmentId, cancellationToken);
+        var studentUserRoleId = currentUserContext.RoleUserId
+            ?? throw new UnauthorizedException("The authenticated user could not be identified.");
+
+        await enrollmentService.DeleteAsync(studentUserRoleId, sectionId, cancellationToken);
         return NoContent();
     }
 }

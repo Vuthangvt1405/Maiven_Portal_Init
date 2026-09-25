@@ -93,10 +93,19 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
                 return CreateResult.Conflict;
             }
 
-            var currentCapacity = await dbContext.Enrollments
-                .CountAsync(x => x.SectionId == entity.SectionId, cancellationToken);
+            var deletedEnrollment = await dbContext.Enrollments
+                .IgnoreQueryFilters()
+                .Include(x => x.StudentScores)
+                .Include(x => x.CourseResult)
+                .SingleOrDefaultAsync(x => x.StudentUserRoleId == entity.StudentUserRoleId &&
+                                           x.SectionId == entity.SectionId &&
+                                           x.IsDeleted,
+                    cancellationToken);
 
-            if (currentCapacity >= section.Capacity)
+            var currentCapacity = await dbContext.Enrollments
+                .CountAsync(x => x.SectionId == entity.SectionId && !x.IsDeleted, cancellationToken);
+
+            if (currentCapacity >= section.Capacity && deletedEnrollment is null)
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return CreateResult.Full;
@@ -104,7 +113,8 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
 
             var duplicate = await dbContext.Enrollments.AnyAsync(
                 x => x.StudentUserRoleId == entity.StudentUserRoleId &&
-                     x.SectionId == entity.SectionId,
+                     x.SectionId == entity.SectionId &&
+                     !x.IsDeleted,
                 cancellationToken);
 
             if (duplicate)
@@ -116,6 +126,7 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
             var hasScheduleOverlap = await dbContext.Enrollments
                 .AnyAsync(enrollment =>
                     enrollment.StudentUserRoleId == entity.StudentUserRoleId &&
+                    !enrollment.IsDeleted &&
                     enrollment.SectionId != entity.SectionId &&
                     enrollment.Section.SemesterId == section.SemesterId &&
                     enrollment.Section.DayOfWeek == section.DayOfWeek &&
@@ -129,11 +140,31 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
                 return CreateResult.Conflict;
             }
 
+            if (deletedEnrollment is not null)
+            {
+                deletedEnrollment.IsDeleted = false;
+
+                foreach (var score in deletedEnrollment.StudentScores)
+                {
+                    score.IsDeleted = false;
+                }
+
+                if (deletedEnrollment.CourseResult is not null)
+                {
+                    deletedEnrollment.CourseResult.IsDeleted = false;
+                }
+
+                entity.Id = deletedEnrollment.Id;
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return CreateResult.Success;
+            }
+
             dbContext.Enrollments.Add(entity);
             await dbContext.SaveChangesAsync(cancellationToken);
 
             var capacityAfterInsert = await dbContext.Enrollments
-                .CountAsync(x => x.SectionId == entity.SectionId, cancellationToken);
+                .CountAsync(x => x.SectionId == entity.SectionId && !x.IsDeleted, cancellationToken);
 
             if (capacityAfterInsert > section.Capacity)
             {
@@ -199,10 +230,27 @@ public sealed class EnrollmentRepository(AppDbContext dbContext)
         return entity;
     }
 
-    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
+    public async Task<bool> DeleteAsync(long studentUserRoleId, long sectionId, CancellationToken cancellationToken)
     {
-        var entity = await dbContext.Enrollments.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var entity = await dbContext.Enrollments
+            .Include(x => x.StudentScores)
+            .Include(x => x.CourseResult)
+            .SingleOrDefaultAsync(x => x.StudentUserRoleId == studentUserRoleId &&
+                                       x.SectionId == sectionId &&
+                                       !x.IsDeleted,
+                cancellationToken);
         if (entity is null) return false;
+
+        foreach (var score in entity.StudentScores.Where(score => !score.IsDeleted))
+        {
+            dbContext.StudentScores.Remove(score);
+        }
+
+        if (entity.CourseResult is { IsDeleted: false } courseResult)
+        {
+            dbContext.CourseResults.Remove(courseResult);
+        }
+
         dbContext.Enrollments.Remove(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
         return true;
